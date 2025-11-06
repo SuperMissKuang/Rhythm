@@ -1,0 +1,662 @@
+import React, { useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  useFonts,
+  Montserrat_500Medium,
+  Montserrat_600SemiBold,
+} from "@expo-google-fonts/montserrat";
+import { useAppTheme } from "@/utils/theme";
+import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react-native";
+import {
+  format,
+  eachDayOfInterval,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
+  differenceInDays,
+  startOfWeek,
+  endOfWeek,
+} from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { MonthDetailModal } from "@/components/Pattern/MonthDetailModal";
+import { SELFCARE_CATEGORIES } from "@/utils/selfcareConstants";
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_PROXY_BASE_URL || "";
+
+const NO_DATA_COLOR = "#E0E0E0";
+
+export default function PatternScreen() {
+  const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
+
+  const [selectedFilter, setSelectedFilter] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [isMonthModalVisible, setIsMonthModalVisible] = useState(false);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [showMoreActivities, setShowMoreActivities] = useState(false);
+
+  const [fontsLoaded] = useFonts({
+    Montserrat_500Medium,
+    Montserrat_600SemiBold,
+  });
+
+  // Fetch custom activities
+  const { data: activitiesData } = useQuery({
+    queryKey: ["custom-activities"],
+    queryFn: async () => {
+      const response = await fetch(
+        `${API_BASE_URL}/api/custom-activities?userId=default-user`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch activities");
+      return response.json();
+    },
+    refetchOnWindowFocus: true,
+  });
+
+  // Fetch menstrual cycles
+  const { data: cyclesData } = useQuery({
+    queryKey: ["menstrual-cycles"],
+    queryFn: async () => {
+      const response = await fetch(
+        `${API_BASE_URL}/api/menstrual-cycles?userId=default-user`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch cycles");
+      return response.json();
+    },
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+  });
+
+  // Fetch anxiety entries
+  const { data: anxietyData } = useQuery({
+    queryKey: ["anxiety-entries"],
+    queryFn: async () => {
+      const response = await fetch(
+        `${API_BASE_URL}/api/anxiety-entries?userId=default-user`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch anxiety entries");
+      const data = await response.json();
+      return data;
+    },
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+  });
+
+  // Fetch self-care entries
+  const { data: selfCareData } = useQuery({
+    queryKey: ["selfcare-entries"],
+    queryFn: async () => {
+      const response = await fetch(
+        `${API_BASE_URL}/api/selfcare-entries?userId=default-user`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch self-care entries");
+      const data = await response.json();
+      return data;
+    },
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
+  const customActivities = activitiesData?.activities || [];
+  
+  // Use default activities if no custom activities are available
+  const activities = customActivities.length > 0 ? customActivities : SELFCARE_CATEGORIES;
+
+  // Add Period as a special activity option
+  const periodActivity = {
+    id: "period",
+    name: "Period",
+    color_hex: "#F8BBD9",
+    light_saturation_min: 1,
+    light_saturation_max: 1,
+    medium_saturation_min: 1,
+    medium_saturation_max: 1,
+    dark_saturation_min: 1,
+  };
+
+  // Combine period with other activities
+  const allActivities = [periodActivity, ...activities];
+
+  // Set default selected filter to the first activity if none selected
+  const currentSelectedFilter =
+    selectedFilter || (allActivities.length > 0 ? allActivities[0] : null);
+
+  const handleMonthPress = (month) => {
+    setSelectedMonth(month);
+    setIsMonthModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsMonthModalVisible(false);
+    setSelectedMonth(null);
+  };
+
+  const handleNextYear = () => {
+    setCurrentYear(currentYear + 1);
+  };
+
+  const handleGoToCurrentYear = () => {
+    setCurrentYear(new Date().getFullYear());
+  };
+
+  const handlePreviousYear = () => {
+    setCurrentYear(currentYear - 1);
+  };
+
+  const getPeriodDayForDate = (date) => {
+    const dateString = format(date, "yyyy-MM-dd");
+    const cycles = cyclesData?.cycles || [];
+
+    for (const cycle of cycles) {
+      const cycleStart = new Date(cycle.start_date);
+      const daysSinceStart = differenceInDays(date, cycleStart);
+
+      // Check if date is within this cycle period (assuming 5 days period length)
+      if (daysSinceStart >= 0 && daysSinceStart < 5) {
+        return daysSinceStart + 1; // Return period day (1-5)
+      }
+    }
+
+    return null; // Not a period day
+  };
+
+  const getActivityDataForDate = (date, selectedActivity) => {
+    const dateString = format(date, "yyyy-MM-dd");
+
+    if (!selectedActivity) {
+      return { count: 0, hasData: false };
+    }
+
+    if (selectedActivity.name === "Period") {
+      const periodDay = getPeriodDayForDate(date);
+      return {
+        count: periodDay || 0,
+        hasData: periodDay !== null,
+      };
+    }
+
+    if (selectedActivity.name === "Anxiety") {
+      const anxietyEntries =
+        anxietyData?.entries?.filter(
+          (entry) => entry.entry_date === dateString,
+        ) || [];
+
+      const anxietyScore = anxietyEntries.reduce(
+        (sum, entry) => sum + entry.severity,
+        0,
+      );
+      return {
+        count: anxietyScore,
+        hasData: anxietyEntries.length > 0,
+      };
+    }
+
+    // Get activity keys for this custom activity
+    const activityKeys =
+      selectedActivity.items?.map((item) => item.activity_key) || [];
+
+    if (activityKeys.length === 0) {
+      return { count: 0, hasData: false };
+    }
+
+    const selfCareEntries =
+      selfCareData?.entries?.filter(
+        (entry) => entry.entry_date === dateString,
+      ) || [];
+
+    const activityCount = selfCareEntries.reduce((sum, entry) => {
+      const matchingActivities = entry.activities.filter((activity) =>
+        activityKeys.includes(activity),
+      );
+      return sum + matchingActivities.length;
+    }, 0);
+
+    return {
+      count: activityCount,
+      hasData: activityCount > 0,
+    };
+  };
+
+  const getActivityColor = (count, hasData, selectedActivity) => {
+    if (!selectedActivity || !hasData || count === 0) return NO_DATA_COLOR;
+
+    const baseColor = selectedActivity.color_hex;
+
+    // Get frequency configuration
+    const lightMin = selectedActivity.light_saturation_min || 1;
+    const lightMax = selectedActivity.light_saturation_max || 2;
+    const mediumMin = selectedActivity.medium_saturation_min || 2;
+    const mediumMax = selectedActivity.medium_saturation_max || 3;
+    const darkMin = selectedActivity.dark_saturation_min || 4;
+
+    // Determine saturation based on count and frequency config
+    if (count >= darkMin) {
+      return baseColor; // Full saturation
+    } else if (count >= mediumMin && count <= mediumMax) {
+      return `${baseColor}80`; // Medium saturation
+    } else if (count >= lightMin && count <= lightMax) {
+      return `${baseColor}40`; // Light saturation
+    }
+
+    return NO_DATA_COLOR;
+  };
+
+  const renderYearView = () => {
+    const monthsCount = 12;
+    const months = Array.from({ length: monthsCount }, (_, monthIndex) => {
+      const monthStart = new Date(currentYear, monthIndex, 1);
+      const monthEnd = endOfMonth(monthStart);
+
+      // Get the start of the week for the first day of the month (Sunday = 0)
+      const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+      const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+
+      const calendarDays = eachDayOfInterval({
+        start: calendarStart,
+        end: calendarEnd,
+      });
+
+      // Group days into weeks (7 days each)
+      const weeks = [];
+      for (let i = 0; i < calendarDays.length; i += 7) {
+        weeks.push(calendarDays.slice(i, i + 7));
+      }
+
+      return { month: monthStart, weeks };
+    });
+
+    return (
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+        {months.map(({ month, weeks }) => (
+          <TouchableOpacity
+            key={month.getMonth()}
+            onPress={() => handleMonthPress(month)}
+            style={{
+              width: "32%",
+              backgroundColor: colors.surface,
+              borderRadius: 12,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: colors.borderLight,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 12,
+                fontFamily: "Montserrat_600SemiBold",
+                color: colors.primary,
+                marginBottom: 8,
+                textAlign: "center",
+              }}
+            >
+              {format(month, "MMM")}
+            </Text>
+
+            {/* Days of week header */}
+            <View style={{ flexDirection: "row", marginBottom: 4, gap: 1 }}>
+              {["S", "M", "T", "W", "T", "F", "S"].map((dayLetter, index) => (
+                <View key={index} style={{ flex: 1, alignItems: "center" }}>
+                  <Text
+                    style={{
+                      fontSize: 8,
+                      fontFamily: "Montserrat_500Medium",
+                      color: colors.secondary,
+                    }}
+                  >
+                    {dayLetter}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Calendar weeks */}
+            <View style={{ gap: 1 }}>
+              {weeks.map((week, weekIndex) => (
+                <View key={weekIndex} style={{ flexDirection: "row", gap: 1 }}>
+                  {week.map((day) => {
+                    const isCurrentMonth = day.getMonth() === month.getMonth();
+                    const data = getActivityDataForDate(
+                      day,
+                      currentSelectedFilter,
+                    );
+
+                    return (
+                      <View
+                        key={day.toISOString()}
+                        style={{
+                          flex: 1,
+                          aspectRatio: 1,
+                          backgroundColor: isCurrentMonth
+                            ? getActivityColor(
+                                data.count,
+                                data.hasData,
+                                currentSelectedFilter,
+                              )
+                            : "transparent",
+                          borderRadius: 1,
+                          opacity: isCurrentMonth ? 1 : 0.2,
+                          borderWidth: isCurrentMonth ? 0.5 : 0,
+                          borderColor: colors.borderLight,
+                        }}
+                      />
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
+  const getLegendItems = () => {
+    if (!currentSelectedFilter) return [];
+
+    const baseColor = currentSelectedFilter.color_hex;
+    const lightMin = currentSelectedFilter.light_saturation_min || 1;
+    const lightMax = currentSelectedFilter.light_saturation_max || 2;
+    const mediumMin = currentSelectedFilter.medium_saturation_min || 2;
+    const mediumMax = currentSelectedFilter.medium_saturation_max || 3;
+    const darkMin = currentSelectedFilter.dark_saturation_min || 4;
+
+    if (currentSelectedFilter.name === "Period") {
+      return [{ color: baseColor, label: "Period Days" }];
+    } else if (currentSelectedFilter.name === "Anxiety") {
+      return [
+        {
+          color: `${baseColor}40`,
+          label:
+            lightMin === lightMax
+              ? `${lightMin} time`
+              : `${lightMin}-${lightMax} times`,
+        },
+        {
+          color: `${baseColor}80`,
+          label:
+            mediumMin === mediumMax
+              ? `${mediumMin} times`
+              : `${mediumMin}-${mediumMax} times`,
+        },
+        {
+          color: baseColor,
+          label: `${darkMin}+ times`,
+        },
+      ];
+    } else {
+      return [
+        {
+          color: `${baseColor}40`,
+          label:
+            lightMin === lightMax
+              ? `${lightMin} time`
+              : `${lightMin}-${lightMax} times`,
+        },
+        {
+          color: `${baseColor}80`,
+          label:
+            mediumMin === mediumMax
+              ? `${mediumMin} times`
+              : `${mediumMin}-${mediumMax} times`,
+        },
+        {
+          color: baseColor,
+          label: `${darkMin}+ times`,
+        },
+      ];
+    }
+  };
+
+  const renderActivityPills = () => {
+    const maxVisiblePills = 4; // Show up to 4 activities before collapsing
+    const visibleActivities = showMoreActivities
+      ? allActivities
+      : allActivities.slice(
+          0,
+          allActivities.length <= 5 ? allActivities.length : maxVisiblePills,
+        );
+    const hiddenCount =
+      allActivities.length > 5 ? allActivities.length - maxVisiblePills : 0;
+    const showMorePill = !showMoreActivities && allActivities.length >= 6;
+
+    return (
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {visibleActivities.map((activity) => (
+          <TouchableOpacity
+            key={activity.id}
+            onPress={() => setSelectedFilter(activity)}
+            style={{
+              paddingVertical: 8,
+              paddingHorizontal: 16,
+              borderRadius: 25,
+              backgroundColor:
+                currentSelectedFilter?.id === activity.id
+                  ? activity.color_hex
+                  : colors.surface,
+              borderWidth: 1,
+              borderColor:
+                currentSelectedFilter?.id === activity.id
+                  ? activity.color_hex
+                  : colors.borderLight,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontFamily: "Montserrat_600SemiBold",
+                color:
+                  currentSelectedFilter?.id === activity.id
+                    ? "#FFFFFF"
+                    : colors.secondary,
+              }}
+            >
+              {activity.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+
+        {showMorePill && (
+          <TouchableOpacity
+            onPress={() => setShowMoreActivities(true)}
+            style={{
+              paddingVertical: 10,
+              paddingHorizontal: 16,
+              borderRadius: 18,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.borderLight,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 16,
+                fontFamily: "Montserrat_600SemiBold",
+                color: colors.secondary,
+              }}
+            >
+              +{hiddenCount} More
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {showMoreActivities && allActivities.length > 5 && (
+          <TouchableOpacity
+            onPress={() => setShowMoreActivities(false)}
+            style={{
+              paddingVertical: 10,
+              paddingHorizontal: 16,
+              borderRadius: 18,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.borderLight,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 16,
+                fontFamily: "Montserrat_600SemiBold",
+                color: colors.secondary,
+              }}
+            >
+              Show Less
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style={isDark ? "light" : "dark"} />
+
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header with centered navigation */}
+        <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 20 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 16,
+            }}
+          >
+            <TouchableOpacity
+              onPress={handlePreviousYear}
+              style={{
+                padding: 8,
+                backgroundColor: colors.surface,
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+              }}
+            >
+              <ChevronLeft size={24} color={colors.primary} />
+            </TouchableOpacity>
+
+            <Text
+              style={{
+                fontSize: 20,
+                fontFamily: "Montserrat_600SemiBold",
+                color: colors.primary,
+                marginHorizontal: 20,
+                minWidth: 100,
+                textAlign: "center",
+              }}
+            >
+              {currentYear}
+            </Text>
+
+            <TouchableOpacity
+              onPress={handleNextYear}
+              style={{
+                padding: 8,
+                backgroundColor: colors.surface,
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+              }}
+            >
+              <ChevronRight size={24} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Activity Pills - left aligned */}
+          <View style={{ marginBottom: 24 }}>{renderActivityPills()}</View>
+
+          {/* Legend - left aligned, no title */}
+          {currentSelectedFilter && (
+            <View style={{ marginBottom: 16 }}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+                {getLegendItems().map((item, index) => (
+                  <View
+                    key={index}
+                    style={{ flexDirection: "row", alignItems: "center" }}
+                  >
+                    <View
+                      style={{
+                        width: 12,
+                        height: 12,
+                        backgroundColor: item.color,
+                        borderRadius: 2,
+                        marginRight: 6,
+                      }}
+                    />
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontFamily: "Montserrat_500Medium",
+                        color: colors.secondary,
+                      }}
+                    >
+                      {item.label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Calendar Grid */}
+          {allActivities.length > 0 ? (
+            renderYearView()
+          ) : (
+            <View
+              style={{
+                justifyContent: "center",
+                alignItems: "center",
+                paddingHorizontal: 20,
+                paddingTop: 40,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontFamily: "Montserrat_600SemiBold",
+                  color: colors.primary,
+                  textAlign: "center",
+                  marginBottom: 8,
+                }}
+              >
+                Period Tracking Available
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontFamily: "Montserrat_500Medium",
+                  color: colors.secondary,
+                  textAlign: "center",
+                }}
+              >
+                You can track your period data now, or go to the More tab to add
+                more activities to track patterns.
+              </Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Month Detail Modal */}
+      <MonthDetailModal
+        visible={isMonthModalVisible}
+        onClose={handleCloseModal}
+        selectedMonth={selectedMonth}
+        activities={allActivities} // Pass allActivities instead of just activities
+        anxietyData={anxietyData}
+        selfCareData={selfCareData}
+        cyclesData={cyclesData}
+      />
+    </View>
+  );
+}
