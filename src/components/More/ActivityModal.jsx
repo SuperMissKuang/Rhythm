@@ -91,21 +91,33 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
   // Mutations
   const createActivityMutation = useMutation({
     mutationFn: async (data) => {
+      console.log("Creating activity with data:", data);
       const response = await fetch(`${API_BASE_URL}/api/custom-activities`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error("Failed to create activity");
-      return response.json();
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log("Server error:", errorText);
+        throw new Error(`Failed to create activity: ${response.status} ${errorText}`);
+      }
+      
+      const result = await response.json();
+      console.log("Server response:", result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log("Create activity success:", result);
       queryClient.invalidateQueries({ queryKey: ["custom-activities"] });
+      console.log("Queries invalidated, closing modal");
       onClose();
       resetForm();
     },
-    onError: () => {
-      Alert.alert("Error", "Failed to create activity. Please try again.");
+    onError: (error) => {
+      console.error("Create activity error:", error);
+      Alert.alert("Error", `Failed to create activity: ${error.message}`);
     },
   });
 
@@ -252,6 +264,8 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
   };
 
   const handleSave = () => {
+    console.log("handleSave called with:", { name: name.trim(), selectedColor });
+    
     if (!name.trim()) {
       Alert.alert("Missing Information", "Please enter an activity name");
       return;
@@ -301,22 +315,25 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
 
     const data = {
       name: name.trim(),
-      colorHex: selectedColor,
+      color_hex: selectedColor,
       items: finalItems,
-      frequencyConfig: {
-        lightSaturationMin: lightMin,
-        lightSaturationMax: lightMax,
-        mediumSaturationMin: mediumMin,
-        mediumSaturationMax: mediumMax,
-        darkSaturationMin: darkMin,
-      },
+      activities: finalItems, // Some APIs might expect both
+      light_saturation_min: lightMin,
+      light_saturation_max: lightMax,
+      medium_saturation_min: mediumMin,
+      medium_saturation_max: mediumMax,
+      dark_saturation_min: darkMin,
     };
 
+    console.log("About to call mutation with final data:", data);
+    
     if (activity) {
       // Update existing activity
+      console.log("Updating existing activity");
       updateActivityMutation.mutate({ ...data, id: activity.id });
     } else {
       // Create new activity
+      console.log("Creating new activity");
       createActivityMutation.mutate({ ...data, userId: "default-user" });
     }
   };
