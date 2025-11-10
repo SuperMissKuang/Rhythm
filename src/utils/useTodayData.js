@@ -1,47 +1,33 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { format } from "date-fns";
 import { TIME_SLOTS } from "@/utils/constants";
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_PROXY_BASE_URL || "";
+import { useActivityStore } from "./stores/useActivityStore";
+import { useAnxietyStore } from "./stores/useAnxietyStore";
+import { useSelfCareStore } from "./stores/useSelfCareStore";
 
 export function useTodayData() {
   const today = format(new Date(), "yyyy-MM-dd");
 
-  const { data: activitiesData } = useQuery({
-    queryKey: ["custom-activities"],
-    queryFn: async () => {
-      const response = await fetch(
-        `${API_BASE_URL}/api/custom-activities?userId=default-user`,
-      );
-      if (!response.ok) throw new Error("Failed to fetch custom activities");
-      return response.json();
-    },
-    refetchOnWindowFocus: true,
-  });
+  // Get all data from stores (not filtered)
+  const activities = useActivityStore((state) => state.activities);
+  const allAnxietyEntries = useAnxietyStore((state) => state.entries);
+  const allSelfCareEntries = useSelfCareStore((state) => state.entries);
 
-  const { data: anxietyData } = useQuery({
-    queryKey: ["anxiety-entries", today],
-    queryFn: async () => {
-      const response = await fetch(
-        `${API_BASE_URL}/api/anxiety-entries?userId=default-user&startDate=${today}&endDate=${today}`,
-      );
-      if (!response.ok) throw new Error("Failed to fetch anxiety entries");
-      return response.json();
-    },
-    refetchOnWindowFocus: true,
-  });
+  // Filter entries for today (memoized to prevent infinite loops)
+  const anxietyEntries = useMemo(
+    () => allAnxietyEntries.filter((entry) => entry.entryDate === today),
+    [allAnxietyEntries, today]
+  );
 
-  const { data: selfCareData } = useQuery({
-    queryKey: ["selfcare-entries", today],
-    queryFn: async () => {
-      const response = await fetch(
-        `${API_BASE_URL}/api/selfcare-entries?userId=default-user&startDate=${today}&endDate=${today}`,
-      );
-      if (!response.ok) throw new Error("Failed to fetch self-care entries");
-      return response.json();
-    },
-    refetchOnWindowFocus: true,
-  });
+  const selfCareEntries = useMemo(
+    () => allSelfCareEntries.filter((entry) => entry.entry_date === today),
+    [allSelfCareEntries, today]
+  );
+
+  // Normalize data format to match API response format
+  const activitiesData = { activities };
+  const anxietyData = { entries: anxietyEntries };
+  const selfCareData = { entries: selfCareEntries };
 
   const getTimeSlotData = () => {
     const slotData = {};

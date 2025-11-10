@@ -1,4 +1,4 @@
-import { differenceInDays } from "date-fns";
+import { differenceInDays, parseISO } from "date-fns";
 import { CYCLE_PHASES } from "@/utils/constants";
 
 // Calculate average cycle length from recent cycles (last 3 or all if less than 3)
@@ -52,12 +52,12 @@ export const getCurrentCycleInfo = (cycles, targetDate) => {
   let relevantCycle = null;
 
   for (const cycle of cycles) {
-    const startDate = new Date(cycle.start_date);
+    const startDate = parseISO(cycle.start_date);
     const cycleLength = cycle.cycle_length || 28;
 
     // Calculate the end date of this cycle
     const endDate = cycle.end_date
-      ? new Date(cycle.end_date)
+      ? parseISO(cycle.end_date)
       : new Date(startDate.getTime() + cycleLength * 24 * 60 * 60 * 1000);
 
     // Check if the target date falls within this cycle
@@ -70,7 +70,7 @@ export const getCurrentCycleInfo = (cycles, targetDate) => {
   // If no cycle contains the date, use the most recent cycle that started before the target date
   if (!relevantCycle) {
     for (const cycle of cycles) {
-      const startDate = new Date(cycle.start_date);
+      const startDate = parseISO(cycle.start_date);
       if (dateToCheck >= startDate) {
         relevantCycle = cycle;
         break;
@@ -83,7 +83,7 @@ export const getCurrentCycleInfo = (cycles, targetDate) => {
     relevantCycle = cycles[0];
   }
 
-  const startDate = new Date(relevantCycle.start_date);
+  const startDate = parseISO(relevantCycle.start_date);
   const daysSinceStart = differenceInDays(dateToCheck, startDate);
 
   // Use average cycle length for more accurate calculations
@@ -135,9 +135,9 @@ export const getCycleDay = (date, cycles) => {
 
   // Find the cycle that contains this date
   for (const cycle of cycles) {
-    const startDate = new Date(cycle.start_date);
+    const startDate = parseISO(cycle.start_date);
     const endDate = cycle.end_date
-      ? new Date(cycle.end_date)
+      ? parseISO(cycle.end_date)
       : new Date(
           startDate.getTime() + cycle.cycle_length * 24 * 60 * 60 * 1000,
         );

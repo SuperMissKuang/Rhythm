@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { X, Trash2 } from "lucide-react-native";
 import { Calendar } from "react-native-calendars";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useAppTheme } from "@/utils/theme";
 
 // Utility function to calculate color luminance for contrast
@@ -71,7 +71,7 @@ export function PeriodCalendarModal({
 
   const getPeriodDisplayName = (startDate, allCycles, index) => {
     const today = new Date();
-    const periodStart = new Date(startDate);
+    const periodStart = parseISO(startDate);
     const daysDiff = Math.floor((today - periodStart) / (1000 * 60 * 60 * 24));
 
     // Current period (within 7 days)
@@ -100,13 +100,13 @@ export function PeriodCalendarModal({
     // Check if there are multiple periods in the same month
     const sameMonthPeriods = allCycles
       .filter((cycle) => {
-        const cycleDate = new Date(cycle.start_date);
+        const cycleDate = parseISO(cycle.start_date);
         return (
           cycleDate.getMonth() === periodMonth &&
           cycleDate.getFullYear() === periodYear
         );
       })
-      .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+      .sort((a, b) => parseISO(a.start_date) - parseISO(b.start_date));
 
     if (sameMonthPeriods.length > 1) {
       // Find position of this period in the month
@@ -162,8 +162,8 @@ export function PeriodCalendarModal({
           id: editingPeriod.id,
           data: {
             userId: "default-user",
-            startDate: selectedPeriodDate,
-            cycleLength: editingPeriod.cycle_length,
+            start_date: selectedPeriodDate,
+            cycle_length: editingPeriod.cycle_length,
           },
         },
         { onSuccess: handleClose },
@@ -172,8 +172,8 @@ export function PeriodCalendarModal({
       createCycle(
         {
           userId: "default-user",
-          startDate: selectedPeriodDate,
-          cycleLength: 28, // Default
+          start_date: selectedPeriodDate,
+          cycle_length: 28, // Default
         },
         { onSuccess: handleClose },
       );
@@ -204,7 +204,7 @@ export function PeriodCalendarModal({
 
     // Sort cycles by start_date descending (latest first)
     const sortedCycles = [...cycles].sort(
-      (a, b) => new Date(b.start_date) - new Date(a.start_date),
+      (a, b) => parseISO(b.start_date) - parseISO(a.start_date),
     );
 
     // Keep only the first occurrence of each start_date
@@ -223,7 +223,7 @@ export function PeriodCalendarModal({
 
     // Mark all period days for all cycles
     cycles.forEach((cycle) => {
-      const cycleStart = new Date(cycle.start_date);
+      const cycleStart = parseISO(cycle.start_date);
       for (let i = 0; i < 5; i++) {
         const periodDate = new Date(cycleStart);
         periodDate.setDate(periodDate.getDate() + i);
@@ -243,7 +243,7 @@ export function PeriodCalendarModal({
 
     // Highlight selected period week
     if (selectedPeriodWeek) {
-      const weekStart = new Date(selectedPeriodWeek.start_date);
+      const weekStart = parseISO(selectedPeriodWeek.start_date);
       for (let i = 0; i < 5; i++) {
         const periodDate = new Date(weekStart);
         periodDate.setDate(periodDate.getDate() + i);
@@ -285,7 +285,7 @@ export function PeriodCalendarModal({
   };
 
   const getPeriodWeekDateRange = (startDate) => {
-    const start = new Date(startDate);
+    const start = parseISO(startDate);
     const end = new Date(start);
     end.setDate(end.getDate() + 4); // 5 days total (0-4)
 
@@ -438,7 +438,7 @@ export function PeriodCalendarModal({
                       color: colors.primary,
                     }}
                   >
-                    {format(new Date(selectedPeriodDate), "EEEE, MMMM d, yyyy")}
+                    {format(parseISO(selectedPeriodDate), "EEEE, MMMM d, yyyy")}
                   </Text>
                 </View>
               )}
@@ -615,7 +615,7 @@ export function PeriodCalendarModal({
                 }}
               >
                 Are you sure you want to delete the period week from{" "}
-                {format(new Date(deleteConfirmation.start_date), "MMM d, yyyy")}
+                {format(parseISO(deleteConfirmation.start_date), "MMM d, yyyy")}
                 ? This action cannot be undone.
               </Text>
 

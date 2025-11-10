@@ -24,10 +24,8 @@ import {
 import { router } from "expo-router";
 import { useAppTheme } from "@/utils/theme";
 import { format } from "date-fns";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
 import KeyboardAvoidingAnimatedView from "@/components/KeyboardAvoidingAnimatedView";
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_PROXY_BASE_URL || "";
 
 const TIME_OPTIONS = [
   { value: "Early Morning", label: "Early Morning (6-9 AM)" },
@@ -74,40 +72,32 @@ const getContrastTextColor = (backgroundColor) => {
 export default function LogAnxietyScreen() {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
-  const queryClient = useQueryClient();
 
   const [severity, setSeverity] = useState(null);
   const [timeDescriptor, setTimeDescriptor] = useState(null);
   const [trigger, setTrigger] = useState("");
   const [showTimeOptions, setShowTimeOptions] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Montserrat_500Medium,
     Montserrat_600SemiBold,
   });
 
-  const addAnxietyMutation = useMutation({
-    mutationFn: async (data) => {
-      const response = await fetch(`${API_BASE_URL}/api/anxiety-entries`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to save anxiety entry");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["anxiety-entries"] });
+  const addAnxietyEntry = async (data) => {
+    setIsLoading(true);
+    try {
+      await useAnxietyStore.getState().createEntry(data);
+      setIsLoading(false);
       Alert.alert("Success", "Anxiety entry saved successfully", [
         { text: "OK", onPress: () => router.back() },
       ]);
-    },
-    onError: (error) => {
+    } catch (error) {
+      console.error("Error saving anxiety entry:", error);
+      setIsLoading(false);
       Alert.alert("Error", "Failed to save anxiety entry. Please try again.");
-    },
-  });
+    }
+  };
 
   if (!fontsLoaded) {
     return null;
@@ -149,7 +139,7 @@ export default function LogAnxietyScreen() {
       }
     }
 
-    addAnxietyMutation.mutate({
+    addAnxietyEntry({
       userId: "default-user",
       entryDate: today,
       timeDescriptor: finalTimeDescriptor,
@@ -194,7 +184,7 @@ export default function LogAnxietyScreen() {
 
             <TouchableOpacity
               onPress={handleSave}
-              disabled={addAnxietyMutation.isLoading}
+              disabled={isLoading}
               style={{
                 backgroundColor:
                   severity && timeDescriptor

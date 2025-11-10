@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Modal, Alert } from "react-native";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useAppTheme } from "@/utils/theme";
 
 export function EditPeriodModal({
@@ -78,7 +78,7 @@ export function EditPeriodModal({
               marginBottom: 24,
             }}
           >
-            {format(new Date(editOptions.date), "MMMM d, yyyy")}
+            {format(parseISO(editOptions.date), "MMMM d, yyyy")}
           </Text>
 
           <TouchableOpacity

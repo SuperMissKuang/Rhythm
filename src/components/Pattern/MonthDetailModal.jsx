@@ -11,6 +11,7 @@ import {
   endOfWeek,
   differenceInDays,
   isSameMonth,
+  parseISO,
 } from "date-fns";
 import { useAppTheme } from "@/utils/theme";
 import { DayViewModal } from "@/components/Pattern/DayViewModal";
@@ -76,7 +77,7 @@ export function MonthDetailModal({
     const cycles = cyclesData?.cycles || [];
 
     for (const cycle of cycles) {
-      const cycleStart = new Date(cycle.start_date);
+      const cycleStart = parseISO(cycle.start_date);
       const daysSinceStart = differenceInDays(date, cycleStart);
 
       if (daysSinceStart >= 0 && daysSinceStart < 5) {

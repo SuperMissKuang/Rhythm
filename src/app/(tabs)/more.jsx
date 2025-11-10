@@ -8,68 +8,46 @@ import {
   Montserrat_600SemiBold,
 } from "@expo-google-fonts/montserrat";
 import { useAppTheme } from "@/utils/theme";
-import { Plus, Edit, Trash2, Palette } from "lucide-react-native";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, Edit, Trash2, Palette, Download, Upload } from "lucide-react-native";
 import ActivityModal from "../../components/More/ActivityModal";
 import { SELFCARE_CATEGORIES } from "@/utils/selfcareConstants";
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_PROXY_BASE_URL || "";
+import { useActivityStore } from "@/utils/stores/useActivityStore";
+import { exportAndShare, getExportStats } from "@/utils/storage/dataExport";
+import { importFromFile } from "@/utils/storage/dataImport";
 
 export default function MoreScreen() {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
-  const queryClient = useQueryClient();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingActivity, setEditingActivity] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Montserrat_500Medium,
     Montserrat_600SemiBold,
   });
 
-  // Fetch custom activities
-  const { data: activitiesData, isLoading } = useQuery({
-    queryKey: ["custom-activities"],
-    queryFn: async () => {
-      const response = await fetch(
-        `${API_BASE_URL}/api/custom-activities?userId=default-user`,
-      );
-      if (!response.ok) throw new Error("Failed to fetch activities");
-      return response.json();
-    },
-    refetchOnWindowFocus: true,
-  });
+  // Get custom activities from store
+  const customActivities = useActivityStore((state) => state.activities);
 
-  // Delete activity mutation
-  const deleteActivityMutation = useMutation({
-    mutationFn: async (activityId) => {
+  // Delete activity function
+  const deleteActivity = async (activityId) => {
+    setIsDeleting(true);
+    try {
       console.log("Attempting to delete activity with ID:", activityId);
-      const response = await fetch(`${API_BASE_URL}/api/custom-activities`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: activityId }),
-      });
-      console.log("Delete response status:", response.status);
-      const data = await response.json();
-      console.log("Delete response data:", data);
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to delete activity");
-      }
-      return data;
-    },
-    onSuccess: () => {
-      console.log("Delete successful, invalidating queries");
-      queryClient.invalidateQueries({ queryKey: ["custom-activities"] });
-    },
-    onError: (error) => {
+      await useActivityStore.getState().deleteActivity(activityId);
+      console.log("Delete successful");
+      setIsDeleting(false);
+    } catch (error) {
       console.error("Delete error:", error);
+      setIsDeleting(false);
       Alert.alert(
         "Error",
         error.message || "Failed to delete activity. Please try again.",
       );
-    },
-  });
+    }
+  };
 
   if (!fontsLoaded) {
     return null;
@@ -94,14 +72,71 @@ export default function MoreScreen() {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => deleteActivityMutation.mutate(activity.id),
+          onPress: () => deleteActivity(activity.id),
         },
       ],
     );
   };
 
-  const customActivities = activitiesData?.activities || [];
-  
+  const handleExportData = async () => {
+    try {
+      const stats = getExportStats();
+      const totalItems =
+        stats.cyclesCount +
+        stats.selfCareEntriesCount +
+        stats.anxietyEntriesCount +
+        stats.customActivitiesCount;
+
+      if (totalItems === 0) {
+        Alert.alert(
+          "No Data",
+          "You don't have any data to export yet. Start tracking to build your data!"
+        );
+        return;
+      }
+
+      await exportAndShare();
+      Alert.alert(
+        "Success",
+        `Exported ${totalItems} items successfully!`
+      );
+    } catch (error) {
+      console.error("Export error:", error);
+      Alert.alert("Error", "Failed to export data. Please try again.");
+    }
+  };
+
+  const handleImportData = async () => {
+    try {
+      const result = await importFromFile({ merge: true });
+
+      if (result.canceled) {
+        return;
+      }
+
+      if (result.success) {
+        const { stats } = result;
+        const totalImported =
+          stats.cyclesImported +
+          stats.selfCareEntriesImported +
+          stats.anxietyEntriesImported +
+          stats.customActivitiesImported;
+
+        Alert.alert(
+          "Import Successful",
+          `Imported ${totalImported} items:\n` +
+            `• ${stats.cyclesImported} cycles\n` +
+            `• ${stats.selfCareEntriesImported} self-care entries\n` +
+            `• ${stats.anxietyEntriesImported} anxiety entries\n` +
+            `• ${stats.customActivitiesImported} custom activities`
+        );
+      }
+    } catch (error) {
+      console.error("Import error:", error);
+      Alert.alert("Error", "Failed to import data. Please check the file format.");
+    }
+  };
+
   // Use default activities if no custom activities are available
   const activities = customActivities.length > 0 ? customActivities : SELFCARE_CATEGORIES;
 
@@ -361,7 +396,7 @@ export default function MoreScreen() {
               </View>
             ))}
 
-            {activities.length === 0 && !isLoading && (
+            {activities.length === 0 && (
               <View
                 style={{
                   backgroundColor: colors.surface,
@@ -416,6 +451,126 @@ export default function MoreScreen() {
                 </TouchableOpacity>
               </View>
             )}
+          </View>
+        </View>
+
+        {/* Data Management Section */}
+        <View style={{ marginTop: 24 }}>
+          <Text
+            style={{
+              fontSize: 18,
+              fontFamily: "Montserrat_600SemiBold",
+              color: colors.primary,
+              marginBottom: 16,
+            }}
+          >
+            Data Management
+          </Text>
+
+          <View style={{ gap: 12 }}>
+            {/* Export Button */}
+            <TouchableOpacity
+              onPress={handleExportData}
+              style={{
+                backgroundColor: colors.surface,
+                borderRadius: 16,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: "#E6F7F0",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 12,
+                  }}
+                >
+                  <Download size={20} color="#10B981" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontFamily: "Montserrat_600SemiBold",
+                      color: colors.primary,
+                      marginBottom: 4,
+                    }}
+                  >
+                    Export Data
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontFamily: "Montserrat_500Medium",
+                      color: colors.secondary,
+                    }}
+                  >
+                    Backup all your data to a file
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+
+            {/* Import Button */}
+            <TouchableOpacity
+              onPress={handleImportData}
+              style={{
+                backgroundColor: colors.surface,
+                borderRadius: 16,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: "#EDE9FE",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 12,
+                  }}
+                >
+                  <Upload size={20} color="#8B5CF6" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontFamily: "Montserrat_600SemiBold",
+                      color: colors.primary,
+                      marginBottom: 4,
+                    }}
+                  >
+                    Import Data
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontFamily: "Montserrat_500Medium",
+                      color: colors.secondary,
+                    }}
+                  >
+                    Load data from a backup file
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>

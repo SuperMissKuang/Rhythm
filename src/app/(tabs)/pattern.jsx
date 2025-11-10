@@ -19,12 +19,14 @@ import {
   differenceInDays,
   startOfWeek,
   endOfWeek,
+  parseISO,
 } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
 import { MonthDetailModal } from "@/components/Pattern/MonthDetailModal";
 import { SELFCARE_CATEGORIES } from "@/utils/selfcareConstants";
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_PROXY_BASE_URL || "";
+import { useActivityStore } from "@/utils/stores/useActivityStore";
+import { useCycleStore } from "@/utils/stores/useCycleStore";
+import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
+import { useSelfCareStore } from "@/utils/stores/useSelfCareStore";
 
 const NO_DATA_COLOR = "#E0E0E0";
 
@@ -43,68 +45,20 @@ export default function PatternScreen() {
     Montserrat_600SemiBold,
   });
 
-  // Fetch custom activities
-  const { data: activitiesData } = useQuery({
-    queryKey: ["custom-activities"],
-    queryFn: async () => {
-      const response = await fetch(
-        `${API_BASE_URL}/api/custom-activities?userId=default-user`,
-      );
-      if (!response.ok) throw new Error("Failed to fetch activities");
-      return response.json();
-    },
-    refetchOnWindowFocus: true,
-  });
+  // Get data from stores
+  const customActivities = useActivityStore((state) => state.activities);
+  const cycles = useCycleStore((state) => state.cycles);
+  const anxietyEntries = useAnxietyStore((state) => state.entries);
+  const selfCareEntries = useSelfCareStore((state) => state.entries);
 
-  // Fetch menstrual cycles
-  const { data: cyclesData } = useQuery({
-    queryKey: ["menstrual-cycles"],
-    queryFn: async () => {
-      const response = await fetch(
-        `${API_BASE_URL}/api/menstrual-cycles?userId=default-user`,
-      );
-      if (!response.ok) throw new Error("Failed to fetch cycles");
-      return response.json();
-    },
-    refetchOnWindowFocus: true,
-    refetchOnMount: "always",
-  });
-
-  // Fetch anxiety entries
-  const { data: anxietyData } = useQuery({
-    queryKey: ["anxiety-entries"],
-    queryFn: async () => {
-      const response = await fetch(
-        `${API_BASE_URL}/api/anxiety-entries?userId=default-user`,
-      );
-      if (!response.ok) throw new Error("Failed to fetch anxiety entries");
-      const data = await response.json();
-      return data;
-    },
-    refetchOnWindowFocus: true,
-    refetchOnMount: "always",
-  });
-
-  // Fetch self-care entries
-  const { data: selfCareData } = useQuery({
-    queryKey: ["selfcare-entries"],
-    queryFn: async () => {
-      const response = await fetch(
-        `${API_BASE_URL}/api/selfcare-entries?userId=default-user`,
-      );
-      if (!response.ok) throw new Error("Failed to fetch self-care entries");
-      const data = await response.json();
-      return data;
-    },
-    refetchOnWindowFocus: true,
-    refetchOnMount: "always",
-  });
+  // Normalize data format to match API response format
+  const cyclesData = { cycles };
+  const anxietyData = { entries: anxietyEntries };
+  const selfCareData = { entries: selfCareEntries };
 
   if (!fontsLoaded) {
     return null;
   }
-
-  const customActivities = activitiesData?.activities || [];
   
   // Use default activities if no custom activities are available
   const activities = customActivities.length > 0 ? customActivities : SELFCARE_CATEGORIES;
@@ -155,7 +109,7 @@ export default function PatternScreen() {
     const cycles = cyclesData?.cycles || [];
 
     for (const cycle of cycles) {
-      const cycleStart = new Date(cycle.start_date);
+      const cycleStart = parseISO(cycle.start_date);
       const daysSinceStart = differenceInDays(date, cycleStart);
 
       // Check if date is within this cycle period (assuming 5 days period length)

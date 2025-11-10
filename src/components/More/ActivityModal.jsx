@@ -24,9 +24,7 @@ import {
   Hash,
   Minus,
 } from "lucide-react-native";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_PROXY_BASE_URL || "";
+import { useActivityStore } from "@/utils/stores/useActivityStore";
 
 // Predefined color palette - 8 bright and distinct colors
 const COLOR_PALETTE = [
@@ -66,12 +64,12 @@ const getContrastTextColor = (backgroundColor) => {
 export default function ActivityModal({ visible, onClose, activity = null }) {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
-  const queryClient = useQueryClient();
 
   const [name, setName] = useState("");
   const [selectedColor, setSelectedColor] = useState(""); // Remove pre-selection
   const [items, setItems] = useState([]);
   const [newItemName, setNewItemName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   // Frequency configuration
   const [lightMin, setLightMin] = useState(1);
@@ -88,58 +86,37 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
     Montserrat_600SemiBold,
   });
 
-  // Mutations
-  const createActivityMutation = useMutation({
-    mutationFn: async (data) => {
+  // Activity mutation functions
+  const createActivity = async (data) => {
+    setIsLoading(true);
+    try {
       console.log("Creating activity with data:", data);
-      const response = await fetch(`${API_BASE_URL}/api/custom-activities`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log("Server error:", errorText);
-        throw new Error(`Failed to create activity: ${response.status} ${errorText}`);
-      }
-      
-      const result = await response.json();
-      console.log("Server response:", result);
-      return result;
-    },
-    onSuccess: (result) => {
+      const result = await useActivityStore.getState().createActivity(data);
       console.log("Create activity success:", result);
-      queryClient.invalidateQueries({ queryKey: ["custom-activities"] });
-      console.log("Queries invalidated, closing modal");
+      setIsLoading(false);
       onClose();
       resetForm();
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error("Create activity error:", error);
+      setIsLoading(false);
       Alert.alert("Error", `Failed to create activity: ${error.message}`);
-    },
-  });
+    }
+  };
 
-  const updateActivityMutation = useMutation({
-    mutationFn: async (data) => {
-      const response = await fetch(`${API_BASE_URL}/api/custom-activities`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Failed to update activity");
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["custom-activities"] });
+  const updateActivity = async (data) => {
+    setIsLoading(true);
+    try {
+      const { id, ...updates } = data;
+      await useActivityStore.getState().updateActivity(id, updates);
+      setIsLoading(false);
       onClose();
       resetForm();
-    },
-    onError: () => {
+    } catch (error) {
+      console.error("Update activity error:", error);
+      setIsLoading(false);
       Alert.alert("Error", "Failed to update activity. Please try again.");
-    },
-  });
+    }
+  };
 
   // Load activity data when editing
   useEffect(() => {
@@ -326,15 +303,15 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
     };
 
     console.log("About to call mutation with final data:", data);
-    
+
     if (activity) {
       // Update existing activity
       console.log("Updating existing activity");
-      updateActivityMutation.mutate({ ...data, id: activity.id });
+      updateActivity({ ...data, id: activity.id });
     } else {
       // Create new activity
       console.log("Creating new activity");
-      createActivityMutation.mutate({ ...data, userId: "default-user" });
+      createActivity({ ...data, userId: "default-user" });
     }
   };
 
@@ -390,10 +367,7 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
 
             <TouchableOpacity
               onPress={handleSave}
-              disabled={
-                createActivityMutation.isLoading ||
-                updateActivityMutation.isLoading
-              }
+              disabled={isLoading}
               style={{
                 backgroundColor: saveButtonState.color,
                 borderRadius: 20,

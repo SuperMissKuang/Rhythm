@@ -1,35 +1,22 @@
 import { useState, useEffect } from "react";
 import { Alert } from "react-native";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { format } from "date-fns";
 import { SELFCARE_CATEGORIES } from "@/utils/selfcareConstants";
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_PROXY_BASE_URL || "";
+import { useSelfCareStore } from "./stores/useSelfCareStore";
+import { useActivityStore } from "./stores/useActivityStore";
 
 export function useSelfCareEntry() {
-  const queryClient = useQueryClient();
   const [timeDescriptor, setTimeDescriptor] = useState(null);
   const [selectedActivities, setSelectedActivities] = useState([]);
   const [expandedCategories, setExpandedCategories] = useState([]);
   const [useIndividualTimes, setUseIndividualTimes] = useState(null);
   const [activityTimes, setActivityTimes] = useState({});
   const [showTimeOptions, setShowTimeOptions] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch custom activities
-  const { data: activitiesData } = useQuery({
-    queryKey: ["custom-activities"],
-    queryFn: async () => {
-      const response = await fetch(
-        `${API_BASE_URL}/api/custom-activities?userId=default-user`,
-      );
-      if (!response.ok) throw new Error("Failed to fetch activities");
-      return response.json();
-    },
-    refetchOnWindowFocus: true,
-  });
-
-  const activities = activitiesData?.activities || [];
+  // Get custom activities from store
+  const activities = useActivityStore((state) => state.activities);
 
   // Filter out anxiety from self-care activities
   const customSelfCareActivities = activities.filter(
@@ -37,8 +24,8 @@ export function useSelfCareEntry() {
   );
 
   // Combine default activities with custom activities, prioritizing custom
-  const selfCareActivities = customSelfCareActivities.length > 0 
-    ? customSelfCareActivities 
+  const selfCareActivities = customSelfCareActivities.length > 0
+    ? customSelfCareActivities
     : SELFCARE_CATEGORIES;
 
   // Auto-expand categories when they're loaded
@@ -50,31 +37,23 @@ export function useSelfCareEntry() {
     }
   }, [selfCareActivities.length]);
 
-  const addSelfCareMutation = useMutation({
-    mutationFn: async (data) => {
-      const response = await fetch(`${API_BASE_URL}/api/selfcare-entries`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to save self-care entry");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["selfcare-entries"] });
+  const addSelfCareEntry = async (data) => {
+    setIsLoading(true);
+    try {
+      await useSelfCareStore.getState().createEntry(data);
+      setIsLoading(false);
       Alert.alert("Success", "Self-care activity saved successfully", [
         { text: "OK", onPress: () => router.back() },
       ]);
-    },
-    onError: (error) => {
+    } catch (error) {
+      console.error("Error saving self-care entry:", error);
+      setIsLoading(false);
       Alert.alert(
         "Error",
         "Failed to save self-care activity. Please try again.",
       );
-    },
-  });
+    }
+  };
 
   // Helper function to find which category an activity belongs to
   const findActivityCategory = (activityKey) => {
@@ -244,7 +223,7 @@ export function useSelfCareEntry() {
       };
     }
 
-    addSelfCareMutation.mutate(mutationData);
+    addSelfCareEntry(mutationData);
   };
 
   return {
@@ -261,7 +240,7 @@ export function useSelfCareEntry() {
     toggleCategory,
     toggleActivity,
     handleSave,
-    isLoading: addSelfCareMutation.isLoading,
+    isLoading,
     selfCareActivities, // Export this for use in components
   };
 }
