@@ -33,6 +33,7 @@ export function SelfCareHeader({
   isDisabled,
   isLoading,
   activityColor,
+  isEditMode = false,
 }) {
   return (
     <View
@@ -55,7 +56,7 @@ export function SelfCareHeader({
           color: colors.primary,
         }}
       >
-        Log Self-Care Activity
+        {isEditMode ? "Edit Self-Care Entry" : "Log Self-Care Activity"}
       </Text>
 
       <TouchableOpacity

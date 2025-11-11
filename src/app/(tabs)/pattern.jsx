@@ -22,13 +22,35 @@ import {
   parseISO,
 } from "date-fns";
 import { MonthDetailModal } from "@/components/Pattern/MonthDetailModal";
-import { SELFCARE_CATEGORIES } from "@/utils/selfcareConstants";
 import { useActivityStore } from "@/utils/stores/useActivityStore";
 import { useCycleStore } from "@/utils/stores/useCycleStore";
 import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
 import { useSelfCareStore } from "@/utils/stores/useSelfCareStore";
 
 const NO_DATA_COLOR = "#E0E0E0";
+
+// Utility function to calculate color luminance for text contrast
+const calculateLuminance = (hexColor) => {
+  if (!hexColor || !hexColor.startsWith("#")) return 0.5;
+
+  // Convert hex to RGB
+  const r = parseInt(hexColor.slice(1, 3), 16) / 255;
+  const g = parseInt(hexColor.slice(3, 5), 16) / 255;
+  const b = parseInt(hexColor.slice(5, 7), 16) / 255;
+
+  // Apply gamma correction
+  const gamma = (c) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+
+  // Calculate relative luminance
+  return 0.2126 * gamma(r) + 0.7152 * gamma(g) + 0.0722 * gamma(b);
+};
+
+// Get text color based on background luminance
+const getContrastTextColor = (backgroundColor) => {
+  const luminance = calculateLuminance(backgroundColor);
+  return luminance > 0.5 ? "#000000" : "#FFFFFF";
+};
 
 export default function PatternScreen() {
   const insets = useSafeAreaInsets();
@@ -60,15 +82,8 @@ export default function PatternScreen() {
     return null;
   }
   
-  // Filter out Period and Anxiety from custom activities, then combine with defaults
-  const customSelfCareActivities = customActivities.filter(
-    (activity) => activity.name !== "Anxiety" && activity.name !== "Period"
-  );
-
-  // Combine default activities with custom activities
-  const activities = [...SELFCARE_CATEGORIES, ...customSelfCareActivities];
-
-  // Add Period and Anxiety as special activity options
+  // All activities are now in the store (defaults + custom)
+  // Just need to add Period as a special activity option
   const periodActivity = {
     id: "period",
     name: "Period",
@@ -80,19 +95,8 @@ export default function PatternScreen() {
     dark_saturation_min: 1,
   };
 
-  const anxietyActivity = {
-    id: "anxiety",
-    name: "Anxiety",
-    color_hex: "#5F27CD",
-    light_saturation_min: 1,
-    light_saturation_max: 1,
-    medium_saturation_min: 1,
-    medium_saturation_max: 1,
-    dark_saturation_min: 1,
-  };
-
-  // Combine period, anxiety, and other activities
-  const allActivities = [periodActivity, anxietyActivity, ...activities];
+  // Combine period with all other activities from the store
+  const allActivities = [periodActivity, ...customActivities];
 
   // Set default selected filter to the first activity if none selected
   const currentSelectedFilter =
@@ -385,99 +389,153 @@ export default function PatternScreen() {
   };
 
   const renderActivityPills = () => {
-    const maxVisiblePills = 4; // Show up to 4 activities before collapsing
-    const visibleActivities = showMoreActivities
-      ? allActivities
-      : allActivities.slice(
-          0,
-          allActivities.length <= 5 ? allActivities.length : maxVisiblePills,
-        );
-    const hiddenCount =
-      allActivities.length > 5 ? allActivities.length - maxVisiblePills : 0;
-    const showMorePill = !showMoreActivities && allActivities.length >= 6;
+    // Show up to 5 pills total. If we have 6+, show 4 activities + 1 "More" pill
+    const maxVisibleBeforeMore = 4;
+    const visibleActivities = allActivities.slice(
+      0,
+      allActivities.length <= 5 ? allActivities.length : maxVisibleBeforeMore,
+    );
+    const showMorePill = allActivities.length >= 6;
 
     return (
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-        {visibleActivities.map((activity) => (
-          <TouchableOpacity
-            key={activity.id}
-            onPress={() => setSelectedFilter(activity)}
-            style={{
-              paddingVertical: 8,
-              paddingHorizontal: 16,
-              borderRadius: 25,
-              backgroundColor:
-                currentSelectedFilter?.id === activity.id
-                  ? activity.color_hex
-                  : colors.surface,
-              borderWidth: 1,
-              borderColor:
-                currentSelectedFilter?.id === activity.id
-                  ? activity.color_hex
-                  : colors.borderLight,
-            }}
-          >
-            <Text
+      <View style={{ position: "relative" }}>
+        <View style={{ flexDirection: "row", gap: 6, flexWrap: "nowrap" }}>
+          {visibleActivities.map((activity) => {
+            return (
+              <TouchableOpacity
+                key={activity.id}
+                onPress={() => setSelectedFilter(activity)}
+                style={{
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderRadius: 20,
+                  backgroundColor:
+                    currentSelectedFilter?.id === activity.id
+                      ? activity.color_hex
+                      : colors.surface,
+                  borderWidth: 1,
+                  borderColor:
+                    currentSelectedFilter?.id === activity.id
+                      ? activity.color_hex
+                      : colors.borderLight,
+                }}
+              >
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontSize: 14,
+                    fontFamily: "Montserrat_600SemiBold",
+                    color:
+                      currentSelectedFilter?.id === activity.id
+                        ? getContrastTextColor(activity.color_hex)
+                        : colors.secondary,
+                    textAlign: "center",
+                  }}
+                >
+                  {activity.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+
+          {showMorePill && (
+            <TouchableOpacity
+              onPress={() => setShowMoreActivities(!showMoreActivities)}
               style={{
-                fontSize: 14,
-                fontFamily: "Montserrat_600SemiBold",
-                color:
-                  currentSelectedFilter?.id === activity.id
-                    ? "#FFFFFF"
-                    : colors.secondary,
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                borderRadius: 20,
+                backgroundColor:
+                  currentSelectedFilter &&
+                  !visibleActivities.find(a => a.id === currentSelectedFilter.id)
+                    ? currentSelectedFilter.color_hex
+                    : colors.surface,
+                borderWidth: 1,
+                borderColor:
+                  currentSelectedFilter &&
+                  !visibleActivities.find(a => a.id === currentSelectedFilter.id)
+                    ? currentSelectedFilter.color_hex
+                    : colors.borderLight,
               }}
             >
-              {activity.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontFamily: "Montserrat_600SemiBold",
+                  color:
+                    currentSelectedFilter &&
+                    !visibleActivities.find(a => a.id === currentSelectedFilter.id)
+                      ? getContrastTextColor(currentSelectedFilter.color_hex)
+                      : colors.secondary,
+                }}
+              >
+                More
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-        {showMorePill && (
-          <TouchableOpacity
-            onPress={() => setShowMoreActivities(true)}
-            style={{
-              paddingVertical: 10,
-              paddingHorizontal: 16,
-              borderRadius: 18,
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.borderLight,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 16,
-                fontFamily: "Montserrat_600SemiBold",
-                color: colors.secondary,
-              }}
-            >
-              +{hiddenCount} More
-            </Text>
-          </TouchableOpacity>
-        )}
-
+        {/* Dropdown menu for additional activities */}
         {showMoreActivities && allActivities.length > 5 && (
-          <TouchableOpacity
-            onPress={() => setShowMoreActivities(false)}
+          <View
             style={{
-              paddingVertical: 10,
-              paddingHorizontal: 16,
-              borderRadius: 18,
+              position: "absolute",
+              top: 48,
+              right: 0,
               backgroundColor: colors.surface,
+              borderRadius: 12,
               borderWidth: 1,
               borderColor: colors.borderLight,
+              padding: 8,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 8,
+              elevation: 5,
+              zIndex: 1000,
+              minWidth: 150,
             }}
           >
-            <Text
-              style={{
-                fontSize: 16,
-                fontFamily: "Montserrat_600SemiBold",
-                color: colors.secondary,
-              }}
-            >
-              Show Less
-            </Text>
-          </TouchableOpacity>
+            {allActivities.slice(maxVisibleBeforeMore).map((activity) => (
+              <TouchableOpacity
+                key={activity.id}
+                onPress={() => {
+                  setSelectedFilter(activity);
+                  setShowMoreActivities(false);
+                }}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  backgroundColor:
+                    currentSelectedFilter?.id === activity.id
+                      ? `${activity.color_hex}20`
+                      : "transparent",
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View
+                    style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: 6,
+                      backgroundColor: activity.color_hex,
+                      marginRight: 8,
+                    }}
+                  />
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontFamily: "Montserrat_600SemiBold",
+                      color: colors.primary,
+                    }}
+                  >
+                    {activity.name}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
         )}
       </View>
     );

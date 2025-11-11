@@ -8,7 +8,7 @@ import { useSelfCareStore } from "./stores/useSelfCareStore";
 export function useDayData(date) {
   const dayString = format(date, "yyyy-MM-dd");
 
-  // Get all data from stores (not filtered)
+  // Get all data from stores - activities now includes everything (defaults + custom)
   const activities = useActivityStore((state) => state.activities);
   const allAnxietyEntries = useAnxietyStore((state) => state.entries);
   const allSelfCareEntries = useSelfCareStore((state) => state.entries);
@@ -24,12 +24,14 @@ export function useDayData(date) {
     [allSelfCareEntries, dayString]
   );
 
-  // Normalize data format to match API response format
-  const activitiesData = { activities };
-  const anxietyData = { entries: anxietyEntries };
-  const selfCareData = { entries: selfCareEntries };
+  // Memoize time slot data to recompute when activities change
+  const timeSlotData = useMemo(() => {
+    // Normalize data format to match API response format
+    const activitiesData = { activities };
+    const anxietyData = { entries: anxietyEntries };
+    const selfCareData = { entries: selfCareEntries };
 
-  const getTimeSlotData = () => {
+    const getTimeSlotData = () => {
     const slotData = {};
 
     TIME_SLOTS.forEach((slot) => {
@@ -39,7 +41,7 @@ export function useDayData(date) {
       };
     });
 
-    // Create activity color lookup - map both activity names and activity_keys to colors
+    // Create activity color lookup - map activity names and activity_keys to colors
     const activityColors = {};
     activitiesData?.activities?.forEach((activity) => {
       activityColors[activity.name.toLowerCase()] = activity.color_hex;
@@ -61,7 +63,7 @@ export function useDayData(date) {
       if (timeSlot) {
         slotData[timeSlot.id].anxiety.push({
           ...entry,
-          color: activityColors["anxiety"] || "#FF6B6B",
+          color: activityColors["anxiety"] || "#5F27CD",
         });
       }
     });
@@ -69,7 +71,9 @@ export function useDayData(date) {
     selfCareData?.entries?.forEach((entry) => {
       if (entry.activity_times) {
         Object.entries(entry.activity_times).forEach(
-          ([activityId, timeDescriptor]) => {
+          ([activityId, timeData]) => {
+            // Handle both old format (string) and new format (object with timeDescriptor)
+            const timeDescriptor = typeof timeData === 'string' ? timeData : timeData.timeDescriptor;
             const timeSlot = TIME_SLOTS.find((slot) =>
               slot.timeDescriptors.includes(timeDescriptor),
             );
@@ -78,6 +82,7 @@ export function useDayData(date) {
               const color = activityColors[activityId] || "#4ECDC4";
 
               slotData[timeSlot.id].selfCare.push({
+                ...entry, // Include full entry for edit/delete
                 activity: activityId,
                 timeDescriptor,
                 color,
@@ -97,6 +102,7 @@ export function useDayData(date) {
             const color = activityColors[activity] || "#4ECDC4";
 
             slotData[timeSlot.id].selfCare.push({
+              ...entry, // Include full entry for edit/delete
               activity,
               timeDescriptor: entry.time_descriptor,
               color,
@@ -109,7 +115,8 @@ export function useDayData(date) {
     return slotData;
   };
 
-  const timeSlotData = getTimeSlotData();
+    return getTimeSlotData();
+  }, [activities, anxietyEntries, selfCareEntries]);
 
   return { timeSlotData };
 }

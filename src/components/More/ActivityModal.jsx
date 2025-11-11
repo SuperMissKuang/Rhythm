@@ -241,8 +241,8 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
   };
 
   const handleSave = () => {
-    console.log("handleSave called with:", { name: name.trim(), selectedColor });
-    
+    console.log("handleSave called with:", { name: name.trim(), selectedColor, activityId: activity?.id });
+
     if (!name.trim()) {
       Alert.alert("Missing Information", "Please enter an activity name");
       return;

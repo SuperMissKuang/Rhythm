@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Alert } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { format } from "date-fns";
 import { SELFCARE_CATEGORIES } from "@/utils/selfcareConstants";
 import { useSelfCareStore } from "./stores/useSelfCareStore";
 import { useActivityStore } from "./stores/useActivityStore";
 
 export function useSelfCareEntry() {
+  const { editId } = useLocalSearchParams();
   const [timeDescriptor, setTimeDescriptor] = useState(null);
   const [selectedActivities, setSelectedActivities] = useState([]);
   const [expandedCategories, setExpandedCategories] = useState([]);
@@ -14,17 +15,56 @@ export function useSelfCareEntry() {
   const [activityTimes, setActivityTimes] = useState({});
   const [showTimeOptions, setShowTimeOptions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
-  // Get custom activities from store
-  const activities = useActivityStore((state) => state.activities);
+  // Get all activities from store (now includes defaults + custom)
+  const allActivities = useActivityStore((state) => state.activities);
 
-  // Filter out anxiety and period from custom activities
-  const customSelfCareActivities = activities.filter(
+  // Filter out anxiety and period
+  const selfCareActivities = allActivities.filter(
     (activity) => activity.name !== "Anxiety" && activity.name !== "Period",
   );
 
-  // Combine default activities with custom activities
-  const selfCareActivities = [...SELFCARE_CATEGORIES, ...customSelfCareActivities];
+  // Debug: Log activities structure
+  console.log("=== SELF-CARE ACTIVITIES DEBUG ===");
+  console.log("Total activities:", selfCareActivities.length);
+  selfCareActivities.forEach(a => {
+    console.log(`Activity: ${a.name}`);
+    console.log(`  - id: ${a.id}`);
+    console.log(`  - items:`, a.items);
+    console.log(`  - items count: ${a.items?.length || 0}`);
+  });
+
+  // Load existing entry if editing
+  useEffect(() => {
+    if (editId) {
+      const entry = useSelfCareStore.getState().entries.find(e => e.id === editId);
+      if (entry) {
+        setIsEditMode(true);
+        setSelectedActivities(entry.activities || []);
+
+        // Set timing approach
+        if (entry.use_individual_times) {
+          setUseIndividualTimes(true);
+          // Convert activity_times object to proper format
+          if (entry.activity_times) {
+            const times = {};
+            Object.keys(entry.activity_times).forEach(activityKey => {
+              const timeData = entry.activity_times[activityKey];
+              times[activityKey] = timeData.timeDescriptor || timeData;
+            });
+            setActivityTimes(times);
+          }
+        } else {
+          setUseIndividualTimes(false);
+          setTimeDescriptor(entry.time_descriptor);
+          if (entry.time_descriptor !== "Now") {
+            setShowTimeOptions(true);
+          }
+        }
+      }
+    }
+  }, [editId]);
 
   // Auto-expand categories when they're loaded
   useEffect(() => {
@@ -35,14 +75,22 @@ export function useSelfCareEntry() {
     }
   }, [selfCareActivities.length]);
 
-  const addSelfCareEntry = async (data) => {
+  const saveSelfCareEntry = async (data) => {
     setIsLoading(true);
     try {
-      await useSelfCareStore.getState().createEntry(data);
-      setIsLoading(false);
-      Alert.alert("Success", "Self-care activity saved successfully", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      if (isEditMode && editId) {
+        await useSelfCareStore.getState().updateEntry(editId, data);
+        setIsLoading(false);
+        Alert.alert("Success", "Self-care entry updated successfully", [
+          { text: "OK", onPress: () => router.back() },
+        ]);
+      } else {
+        await useSelfCareStore.getState().createEntry(data);
+        setIsLoading(false);
+        Alert.alert("Success", "Self-care activity saved successfully", [
+          { text: "OK", onPress: () => router.back() },
+        ]);
+      }
     } catch (error) {
       console.error("Error saving self-care entry:", error);
       setIsLoading(false);
@@ -240,8 +288,14 @@ export function useSelfCareEntry() {
       };
     }
 
-    console.log("Creating self-care entry with data:", mutationData);
-    addSelfCareEntry(mutationData);
+    // Don't include entry_date, userId for updates, they should remain unchanged
+    if (isEditMode) {
+      delete mutationData.entryDate;
+      delete mutationData.userId;
+    }
+
+    console.log("Saving self-care entry with data:", mutationData);
+    saveSelfCareEntry(mutationData);
   };
 
   return {
@@ -259,6 +313,7 @@ export function useSelfCareEntry() {
     toggleActivity,
     handleSave,
     isLoading,
+    isEditMode,
     selfCareActivities, // Export this for use in components
   };
 }

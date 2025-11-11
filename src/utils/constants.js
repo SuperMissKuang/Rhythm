@@ -27,6 +27,11 @@ export const CYCLE_PHASES = [
   },
 ];
 
+// Activity colors for special activities not in SELFCARE_CATEGORIES
+export const ACTIVITY_COLORS = {
+  anxiety: "#5F27CD", // Anxiety's specific purple color
+};
+
 export const TIME_SLOTS = [
   {
     id: "early_morning",

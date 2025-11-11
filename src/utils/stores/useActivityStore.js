@@ -14,12 +14,87 @@ export const useActivityStore = create((set, get) => ({
   /**
    * Initialize store by loading data from AsyncStorage
    * Should be called once on app startup
+   * Ensures default activities are present
    */
   init: async () => {
     set({ isLoading: true });
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      const activities = stored ? JSON.parse(stored) : [];
+      let activities = stored ? JSON.parse(stored) : [];
+
+      const { SELFCARE_CATEGORIES } = require("@/utils/selfcareConstants");
+      const { ACTIVITY_COLORS } = require("@/utils/constants");
+
+      // Check which default activities are missing or need updating
+      const existingActivityMap = new Map(activities.map(a => [a.name, a]));
+      const defaultsToAdd = [];
+      const activitiesToUpdate = [];
+
+      // Check each default self-care category
+      SELFCARE_CATEGORIES.forEach((category) => {
+        const existing = existingActivityMap.get(category.name);
+
+        if (!existing) {
+          // Activity doesn't exist, add it
+          defaultsToAdd.push({
+            id: `default-${category.id}`,
+            userId: "default-user",
+            createdAt: new Date().toISOString(),
+            name: category.name,
+            color_hex: category.color_hex,
+            items: category.items || [],
+            light_saturation_min: category.light_saturation_min || 1,
+            light_saturation_max: category.light_saturation_max || 2,
+            medium_saturation_min: category.medium_saturation_min || 3,
+            medium_saturation_max: category.medium_saturation_max || 4,
+            dark_saturation_min: category.dark_saturation_min || 5,
+          });
+        } else {
+          // Activity exists - check if items need fixing
+          const needsItemsFix = !existing.items || existing.items.length === 0 ||
+            existing.items.some(item => !item.activity_key);
+
+          if (needsItemsFix) {
+            // Replace items with correct structure
+            existing.items = category.items || [];
+            activitiesToUpdate.push(existing);
+            console.log(`Fixing items for ${existing.name}`);
+          }
+        }
+      });
+
+      // Check Anxiety activity
+      const existingAnxiety = existingActivityMap.get("Anxiety");
+      if (!existingAnxiety) {
+        defaultsToAdd.push({
+          id: "default-anxiety",
+          userId: "default-user",
+          createdAt: new Date().toISOString(),
+          name: "Anxiety",
+          color_hex: ACTIVITY_COLORS.anxiety,
+          items: [{ id: "anxiety", name: "Anxiety", activity_key: "anxiety" }],
+          light_saturation_min: 1,
+          light_saturation_max: 2,
+          medium_saturation_min: 3,
+          medium_saturation_max: 4,
+          dark_saturation_min: 5,
+        });
+      } else if (!existingAnxiety.items || existingAnxiety.items.length === 0) {
+        existingAnxiety.items = [{ id: "anxiety", name: "Anxiety", activity_key: "anxiety" }];
+        activitiesToUpdate.push(existingAnxiety);
+      }
+
+      // Add missing defaults and update existing ones
+      if (defaultsToAdd.length > 0 || activitiesToUpdate.length > 0) {
+        activities = [...defaultsToAdd, ...activities];
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(activities));
+        console.log(`Migration: Added ${defaultsToAdd.length} missing default activities, updated ${activitiesToUpdate.length} existing activities`);
+        console.log("Activities after migration:", activities.map(a => ({
+          name: a.name,
+          itemsCount: a.items?.length || 0
+        })));
+      }
+
       set({ activities, isLoading: false, isInitialized: true });
     } catch (error) {
       console.error("Error loading custom activities from storage:", error);

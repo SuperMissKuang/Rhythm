@@ -34,6 +34,7 @@ export default function LogSelfCareScreen() {
     toggleActivity,
     handleSave,
     isLoading,
+    isEditMode,
     selfCareActivities,
   } = useSelfCareEntry();
 
@@ -124,6 +125,7 @@ export default function LogSelfCareScreen() {
           isDisabled={getSaveButtonDisabled()}
           isLoading={isLoading}
           activityColor={getActivityColor()}
+          isEditMode={isEditMode}
         />
       </View>
 

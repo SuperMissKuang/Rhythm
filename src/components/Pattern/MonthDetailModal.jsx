@@ -18,6 +18,24 @@ import { DayViewModal } from "@/components/Pattern/DayViewModal";
 
 const NO_DATA_COLOR = "#E0E0E0";
 
+// Calculate relative luminance with gamma correction
+const calculateLuminance = (hexColor) => {
+  if (!hexColor || !hexColor.startsWith("#")) return 0.5;
+  const r = parseInt(hexColor.slice(1, 3), 16) / 255;
+  const g = parseInt(hexColor.slice(3, 5), 16) / 255;
+  const b = parseInt(hexColor.slice(5, 7), 16) / 255;
+
+  const gamma = (c) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+
+  return 0.2126 * gamma(r) + 0.7152 * gamma(g) + 0.0722 * gamma(b);
+};
+
+// Get contrast text color (black or white) based on background luminance
+const getContrastTextColor = (backgroundColor) => {
+  const luminance = calculateLuminance(backgroundColor);
+  return luminance > 0.5 ? "#000000" : "#FFFFFF";
+};
+
 export function MonthDetailModal({
   visible,
   onClose,
@@ -33,6 +51,7 @@ export function MonthDetailModal({
   const [enabledActivities, setEnabledActivities] = useState(new Set());
   const [selectedDay, setSelectedDay] = useState(null);
   const [isDayViewVisible, setIsDayViewVisible] = useState(false);
+  const [showMoreActivities, setShowMoreActivities] = useState(false);
 
   // Initialize enabled activities when modal opens
   useEffect(() => {
@@ -248,47 +267,143 @@ export function MonthDetailModal({
                 Activities
               </Text>
 
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginBottom: 16 }}
-              >
-                <View
-                  style={{ flexDirection: "row", gap: 8, paddingRight: 20 }}
-                >
-                  {activities.map((activity) => {
-                    const isEnabled = enabledActivities.has(activity.id);
+              <View style={{ position: "relative" }}>
+                <View style={{ flexDirection: "row", gap: 6, flexWrap: "nowrap" }}>
+                  {(() => {
+                    const maxVisibleBeforeMore = 4;
+                    const visibleActivities = activities.slice(
+                      0,
+                      activities.length <= 5 ? activities.length : maxVisibleBeforeMore,
+                    );
+                    const showMorePill = activities.length >= 6;
+
                     return (
-                      <TouchableOpacity
-                        key={activity.id}
-                        onPress={() => toggleActivity(activity.id)}
-                        style={{
-                          paddingVertical: 8,
-                          paddingHorizontal: 16,
-                          borderRadius: 20,
-                          backgroundColor: isEnabled
-                            ? activity.color_hex
-                            : colors.surface,
-                          borderWidth: 1,
-                          borderColor: isEnabled
-                            ? activity.color_hex
-                            : colors.borderLight,
-                        }}
-                      >
-                        <Text
+                      <>
+                        {visibleActivities.map((activity) => {
+                          const isEnabled = enabledActivities.has(activity.id);
+                          return (
+                            <TouchableOpacity
+                              key={activity.id}
+                              onPress={() => toggleActivity(activity.id)}
+                              style={{
+                                paddingVertical: 8,
+                                paddingHorizontal: 12,
+                                borderRadius: 20,
+                                backgroundColor: isEnabled
+                                  ? activity.color_hex
+                                  : colors.surface,
+                                borderWidth: 1,
+                                borderColor: isEnabled
+                                  ? activity.color_hex
+                                  : colors.borderLight,
+                              }}
+                            >
+                              <Text
+                                numberOfLines={1}
+                                style={{
+                                  fontSize: 14,
+                                  fontFamily: "Montserrat_600SemiBold",
+                                  color: isEnabled ? getContrastTextColor(activity.color_hex) : colors.secondary,
+                                  textAlign: "center",
+                                }}
+                              >
+                                {activity.name}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+
+                        {showMorePill && (
+                          <TouchableOpacity
+                            onPress={() => setShowMoreActivities(!showMoreActivities)}
+                            style={{
+                              paddingVertical: 8,
+                              paddingHorizontal: 12,
+                              borderRadius: 20,
+                              backgroundColor: colors.surface,
+                              borderWidth: 1,
+                              borderColor: colors.borderLight,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 14,
+                                fontFamily: "Montserrat_600SemiBold",
+                                color: colors.secondary,
+                              }}
+                            >
+                              More
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </>
+                    );
+                  })()}
+                </View>
+
+                {/* Dropdown menu for additional activities */}
+                {showMoreActivities && activities.length > 5 && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: 48,
+                      right: 0,
+                      backgroundColor: colors.surface,
+                      borderRadius: 12,
+                      padding: 12,
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 8,
+                      elevation: 5,
+                      borderWidth: 1,
+                      borderColor: colors.borderLight,
+                      minWidth: 150,
+                      zIndex: 1000,
+                    }}
+                  >
+                    {activities.slice(4).map((activity) => {
+                      const isEnabled = enabledActivities.has(activity.id);
+                      return (
+                        <TouchableOpacity
+                          key={activity.id}
+                          onPress={() => {
+                            toggleActivity(activity.id);
+                            setShowMoreActivities(false);
+                          }}
                           style={{
-                            fontSize: 14,
-                            fontFamily: "Montserrat_600SemiBold",
-                            color: isEnabled ? "#FFFFFF" : colors.secondary,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            paddingVertical: 8,
+                            paddingHorizontal: 8,
+                            borderRadius: 8,
+                            backgroundColor: isEnabled ? `${activity.color_hex}20` : "transparent",
                           }}
                         >
-                          {activity.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </ScrollView>
+                          <View
+                            style={{
+                              width: 12,
+                              height: 12,
+                              borderRadius: 6,
+                              backgroundColor: activity.color_hex,
+                              marginRight: 8,
+                            }}
+                          />
+                          <Text
+                            style={{
+                              fontSize: 14,
+                              fontFamily: "Montserrat_600SemiBold",
+                              color: colors.primary,
+                            }}
+                          >
+                            {activity.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
             </View>
 
             {/* Calendar */}

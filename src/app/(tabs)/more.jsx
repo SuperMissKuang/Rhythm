@@ -10,7 +10,6 @@ import {
 import { useAppTheme } from "@/utils/theme";
 import { Plus, Edit, Trash2, Palette, Download, Upload } from "lucide-react-native";
 import ActivityModal from "../../components/More/ActivityModal";
-import { SELFCARE_CATEGORIES } from "@/utils/selfcareConstants";
 import { useActivityStore } from "@/utils/stores/useActivityStore";
 import { exportAndShare, getExportStats } from "@/utils/storage/dataExport";
 import { importFromFile } from "@/utils/storage/dataImport";
@@ -137,31 +136,13 @@ export default function MoreScreen() {
     }
   };
 
-  // Filter out Period and Anxiety from custom activities
-  const customSelfCareActivities = customActivities.filter(
-    (activity) => activity.name !== "Anxiety" && activity.name !== "Period"
+  // All activities are now in the store (defaults + custom)
+  // Just filter out Period if it exists
+  const activities = customActivities.filter(
+    (activity) => activity.name !== "Period"
   );
 
-  // Combine default activities with custom activities
-  let activities = [...SELFCARE_CATEGORIES, ...customSelfCareActivities];
-
-  // Add Period and Anxiety as special built-in activities (non-editable)
-  const periodActivity = {
-    id: "period",
-    name: "Period",
-    color_hex: "#F8BBD9",
-    isBuiltIn: true,
-  };
-
-  const anxietyActivity = {
-    id: "anxiety",
-    name: "Anxiety",
-    color_hex: "#5F27CD",
-    isBuiltIn: true,
-  };
-
-  // Combine built-in activities with all activities (default + custom)
-  activities = [periodActivity, anxietyActivity, ...activities];
+  console.log("Activities to display:", activities.map(a => ({ name: a.name, id: a.id })));
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -276,32 +257,30 @@ export default function MoreScreen() {
                     </Text>
                   </View>
 
-                  {/* Only show edit/delete for non-built-in activities */}
-                  {!activity.isBuiltIn && (
-                    <View style={{ flexDirection: "row", gap: 8 }}>
-                      <TouchableOpacity
-                        onPress={() => handleEditActivity(activity)}
-                        style={{
-                          padding: 8,
-                          borderRadius: 8,
-                          backgroundColor: colors.background,
-                        }}
-                      >
-                        <Edit size={16} color={colors.secondary} />
-                      </TouchableOpacity>
+                  {/* Show edit and delete buttons for all activities */}
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <TouchableOpacity
+                      onPress={() => handleEditActivity(activity)}
+                      style={{
+                        padding: 8,
+                        borderRadius: 8,
+                        backgroundColor: colors.background,
+                      }}
+                    >
+                      <Edit size={16} color={colors.secondary} />
+                    </TouchableOpacity>
 
-                      <TouchableOpacity
-                        onPress={() => handleDeleteActivity(activity)}
-                        style={{
-                          padding: 8,
-                          borderRadius: 8,
-                          backgroundColor: colors.background,
-                        }}
-                      >
-                        <Trash2 size={16} color="#E53E3E" />
-                      </TouchableOpacity>
-                    </View>
-                  )}
+                    <TouchableOpacity
+                      onPress={() => handleDeleteActivity(activity)}
+                      style={{
+                        padding: 8,
+                        borderRadius: 8,
+                        backgroundColor: colors.background,
+                      }}
+                    >
+                      <Trash2 size={16} color="#E53E3E" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {/* Sub-activities */}
@@ -342,11 +321,7 @@ export default function MoreScreen() {
                           color: colors.secondary,
                         }}
                       >
-                        {activity.isBuiltIn
-                          ? (activity.name === "Period"
-                              ? "Track your menstrual cycle"
-                              : "Log anxiety attacks and severity")
-                          : activity.name}
+                        {activity.name}
                       </Text>
                     )}
                   </View>

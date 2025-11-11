@@ -3,8 +3,10 @@ import { View, Text } from "react-native";
 import { TIME_SLOTS } from "@/utils/constants";
 import { ActivityPill } from "@/components/Today/ActivityPill";
 import { EditAnxietyModal } from "@/components/Today/EditAnxietyModal";
+import { EditSelfCareModal } from "@/components/Today/EditSelfCareModal";
 import { useAppTheme } from "@/utils/theme";
 import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
+import { useSelfCareStore } from "@/utils/stores/useSelfCareStore";
 import { Alert } from "react-native";
 
 export function Timeline({ timeSlotData }) {
@@ -12,6 +14,10 @@ export function Timeline({ timeSlotData }) {
   const [selectedAnxietyEntry, setSelectedAnxietyEntry] = useState(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isDeletingEntry, setIsDeletingEntry] = useState(false);
+
+  const [selectedSelfCareEntry, setSelectedSelfCareEntry] = useState(null);
+  const [isEditSelfCareModalVisible, setIsEditSelfCareModalVisible] = useState(false);
+  const [isDeletingSelfCareEntry, setIsDeletingSelfCareEntry] = useState(false);
 
   const handleAnxietyPress = (entry) => {
     setSelectedAnxietyEntry(entry);
@@ -34,6 +40,30 @@ export function Timeline({ timeSlotData }) {
       console.error("Error deleting anxiety entry:", error);
       setIsDeletingEntry(false);
       Alert.alert("Error", "Failed to delete anxiety entry. Please try again.");
+    }
+  };
+
+  const handleSelfCarePress = (entry) => {
+    setSelectedSelfCareEntry(entry);
+    setIsEditSelfCareModalVisible(true);
+  };
+
+  const handleCloseSelfCareModal = () => {
+    setIsEditSelfCareModalVisible(false);
+    setSelectedSelfCareEntry(null);
+  };
+
+  const handleDeleteSelfCare = async (entryId) => {
+    setIsDeletingSelfCareEntry(true);
+    try {
+      await useSelfCareStore.getState().deleteEntry(entryId);
+      setIsDeletingSelfCareEntry(false);
+      handleCloseSelfCareModal();
+      Alert.alert("Success", "Self-care entry deleted successfully");
+    } catch (error) {
+      console.error("Error deleting self-care entry:", error);
+      setIsDeletingSelfCareEntry(false);
+      Alert.alert("Error", "Failed to delete self-care entry. Please try again.");
     }
   };
 
@@ -129,6 +159,7 @@ export function Timeline({ timeSlotData }) {
                         key={`selfcare-${idx}`}
                         activity={entry}
                         type="selfcare"
+                        onPress={() => handleSelfCarePress(entry)}
                       />
                     ))}
                   </View>
@@ -145,6 +176,14 @@ export function Timeline({ timeSlotData }) {
         onDelete={handleDeleteAnxiety}
         anxietyEntry={selectedAnxietyEntry}
         isDeletingEntry={isDeletingEntry}
+      />
+
+      <EditSelfCareModal
+        visible={isEditSelfCareModalVisible}
+        onClose={handleCloseSelfCareModal}
+        onDelete={handleDeleteSelfCare}
+        selfCareEntry={selectedSelfCareEntry}
+        isDeletingEntry={isDeletingSelfCareEntry}
       />
     </View>
   );
