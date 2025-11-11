@@ -137,8 +137,13 @@ export default function MoreScreen() {
     }
   };
 
-  // Use default activities if no custom activities are available
-  let activities = customActivities.length > 0 ? customActivities : SELFCARE_CATEGORIES;
+  // Filter out Period and Anxiety from custom activities
+  const customSelfCareActivities = customActivities.filter(
+    (activity) => activity.name !== "Anxiety" && activity.name !== "Period"
+  );
+
+  // Combine default activities with custom activities
+  let activities = [...SELFCARE_CATEGORIES, ...customSelfCareActivities];
 
   // Add Period and Anxiety as special built-in activities (non-editable)
   const periodActivity = {
@@ -155,7 +160,7 @@ export default function MoreScreen() {
     isBuiltIn: true,
   };
 
-  // Combine built-in activities with custom/default activities
+  // Combine built-in activities with all activities (default + custom)
   activities = [periodActivity, anxietyActivity, ...activities];
 
   return (
@@ -213,9 +218,11 @@ export default function MoreScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: 20,
-          paddingBottom: 40,
+          paddingBottom: insets.bottom + 40,
         }}
         showsVerticalScrollIndicator={false}
+        bounces={true}
+        alwaysBounceVertical={false}
       >
         {/* Activity Management Section */}
         <View style={{ marginBottom: 32 }}>

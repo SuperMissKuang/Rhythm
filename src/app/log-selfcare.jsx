@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ScrollView } from "react-native";
+import { View, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -131,9 +131,13 @@ export default function LogSelfCareScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: 20,
-          paddingBottom: 40,
+          paddingBottom: 400,
         }}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
+        scrollEnabled={true}
+        removeClippedSubviews={false}
+        keyboardDismissMode="on-drag"
       >
         {/* Activity Categories */}
         <ActivityCategories

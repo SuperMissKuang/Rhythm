@@ -39,10 +39,19 @@ export function useDayData(date) {
       };
     });
 
-    // Create activity color lookup
+    // Create activity color lookup - map both activity names and activity_keys to colors
     const activityColors = {};
     activitiesData?.activities?.forEach((activity) => {
       activityColors[activity.name.toLowerCase()] = activity.color_hex;
+
+      // Also map each item's activity_key to the parent category color
+      if (activity.items && activity.items.length > 0) {
+        activity.items.forEach((item) => {
+          if (item.activity_key) {
+            activityColors[item.activity_key] = activity.color_hex;
+          }
+        });
+      }
     });
 
     anxietyData?.entries?.forEach((entry) => {
@@ -64,21 +73,14 @@ export function useDayData(date) {
             const timeSlot = TIME_SLOTS.find((slot) =>
               slot.timeDescriptors.includes(timeDescriptor),
             );
-            if (timeSlot) {
-              // Determine activity category based on activity_id
-              let activityCategory = "hair"; // default
-              if (
-                activityId.includes("exfoliation") ||
-                activityId.includes("face_mask") ||
-                activityId.includes("moisturize")
-              ) {
-                activityCategory = "skin";
-              }
+            if (timeSlot && activityId) {
+              // Get color directly from activity_key lookup
+              const color = activityColors[activityId] || "#4ECDC4";
 
               slotData[timeSlot.id].selfCare.push({
                 activity: activityId,
                 timeDescriptor,
-                color: activityColors[activityCategory] || "#4ECDC4",
+                color,
               });
             }
           },
@@ -89,20 +91,15 @@ export function useDayData(date) {
         );
         if (timeSlot) {
           entry.activities.forEach((activity) => {
-            // Determine activity category based on activity name
-            let activityCategory = "hair"; // default
-            if (
-              activity.includes("exfoliation") ||
-              activity.includes("face_mask") ||
-              activity.includes("moisturize")
-            ) {
-              activityCategory = "skin";
-            }
+            if (!activity) return; // Skip null/undefined activities
+
+            // Get color directly from activity_key lookup
+            const color = activityColors[activity] || "#4ECDC4";
 
             slotData[timeSlot.id].selfCare.push({
               activity,
               timeDescriptor: entry.time_descriptor,
-              color: activityColors[activityCategory] || "#4ECDC4",
+              color,
             });
           });
         }

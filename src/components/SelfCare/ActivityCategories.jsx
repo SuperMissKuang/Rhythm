@@ -62,9 +62,13 @@ export function ActivityCategories({
             );
             const categoryActivities =
               category.items && category.items.length > 0
-                ? category.items.filter((item) =>
-                    selectedActivities.includes(item.activity_key),
-                  ) || []
+                ? category.items.filter((item) => {
+                    const itemKey = item.activity_key ||
+                      item.name?.toLowerCase()
+                        .replace(/\s+/g, "_")
+                        .replace(/[^a-z0-9_]/g, "");
+                    return selectedActivities.includes(itemKey);
+                  }) || []
                 : selectedActivities.includes(
                       category.name
                         .toLowerCase()
@@ -164,16 +168,26 @@ export function ActivityCategories({
                   <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
                     {category.items && category.items.length > 0 ? (
                       category.items.map((activity, index) => {
-                        const isSelected = selectedActivities.includes(
-                          activity.activity_key,
-                        );
+                        // Ensure activity_key exists, fallback to generating from name
+                        const activityKey = activity.activity_key ||
+                          activity.name?.toLowerCase()
+                            .replace(/\s+/g, "_")
+                            .replace(/[^a-z0-9_]/g, "");
+
+                        console.log("Rendering activity item:", {
+                          name: activity.name,
+                          activity_key: activity.activity_key,
+                          computed: activityKey
+                        });
+
+                        const isSelected = selectedActivities.includes(activityKey);
 
                         return (
                           <TouchableOpacity
-                            key={activity.id}
+                            key={activity.id || `${category.id}-${index}`}
                             onPress={() =>
                               !isInactive &&
-                              onToggleActivity(activity.activity_key)
+                              onToggleActivity(activityKey)
                             }
                             disabled={isInactive} // Disable if category is inactive
                             style={{

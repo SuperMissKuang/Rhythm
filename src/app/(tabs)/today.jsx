@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { View } from "react-native";
+import { View, ScrollView } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import {
   useFonts,
@@ -7,6 +7,7 @@ import {
   Montserrat_600SemiBold,
 } from "@expo-google-fonts/montserrat";
 import { differenceInDays } from "date-fns";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/utils/theme";
 import { getCurrentCycleInfo } from "@/utils/cycleUtils";
@@ -21,6 +22,8 @@ import { EditPeriodModal } from "@/components/Today/EditPeriodModal";
 
 export default function TodayScreen() {
   const { isDark, colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
+
   const [fontsLoaded] = useFonts({
     Montserrat_500Medium,
     Montserrat_600SemiBold,
@@ -76,7 +79,15 @@ export default function TodayScreen() {
 
       <ActionButtons />
 
-      <Timeline timeSlotData={timeSlotData} />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 40,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Timeline timeSlotData={timeSlotData} />
+      </ScrollView>
 
       <PeriodCalendarModal
         visible={showCalendarModal}

@@ -18,15 +18,13 @@ export function useSelfCareEntry() {
   // Get custom activities from store
   const activities = useActivityStore((state) => state.activities);
 
-  // Filter out anxiety from self-care activities
+  // Filter out anxiety and period from custom activities
   const customSelfCareActivities = activities.filter(
-    (activity) => activity.name !== "Anxiety",
+    (activity) => activity.name !== "Anxiety" && activity.name !== "Period",
   );
 
-  // Combine default activities with custom activities, prioritizing custom
-  const selfCareActivities = customSelfCareActivities.length > 0
-    ? customSelfCareActivities
-    : SELFCARE_CATEGORIES;
+  // Combine default activities with custom activities
+  const selfCareActivities = [...SELFCARE_CATEGORIES, ...customSelfCareActivities];
 
   // Auto-expand categories when they're loaded
   useEffect(() => {
@@ -97,8 +95,18 @@ export function useSelfCareEntry() {
   };
 
   const toggleActivity = (activityId) => {
+    console.log("toggleActivity called with:", activityId);
+
+    if (!activityId) {
+      console.error("toggleActivity received undefined/null activityId");
+      return;
+    }
+
     const activityCategory = findActivityCategory(activityId);
-    if (!activityCategory) return;
+    if (!activityCategory) {
+      console.error("Could not find category for activity:", activityId);
+      return;
+    }
 
     const currentCategory = getCurrentlySelectedCategory();
 
@@ -144,20 +152,29 @@ export function useSelfCareEntry() {
   };
 
   const handleSave = () => {
-    if (selectedActivities.length === 0) {
+    console.log("Selected activities before save:", selectedActivities);
+
+    // Filter out any undefined/null values
+    const validActivities = selectedActivities.filter(act => act != null);
+
+    if (validActivities.length === 0) {
       Alert.alert("Missing Information", "Please select at least one activity");
       return;
     }
 
+    if (validActivities.length !== selectedActivities.length) {
+      console.error("Warning: Found undefined activities in selection:", selectedActivities);
+    }
+
     // For multiple activities, timing approach must be chosen
-    if (selectedActivities.length > 1 && useIndividualTimes === null) {
+    if (validActivities.length > 1 && useIndividualTimes === null) {
       Alert.alert("Missing Information", "Please choose a timing approach");
       return;
     }
 
     // For individual times, validate that all activities have times set
-    if (useIndividualTimes === true && selectedActivities.length > 1) {
-      const missingTimes = selectedActivities.filter(
+    if (useIndividualTimes === true && validActivities.length > 1) {
+      const missingTimes = validActivities.filter(
         (activityId) => !activityTimes[activityId],
       );
       if (missingTimes.length > 0) {
@@ -201,7 +218,7 @@ export function useSelfCareEntry() {
       mutationData = {
         userId: "default-user",
         entryDate: today,
-        activities: selectedActivities,
+        activities: validActivities,
         useIndividualTimes: true,
         activityTimes: convertedActivityTimes,
         cycleDay: null, // TODO: Calculate cycle day
@@ -217,12 +234,13 @@ export function useSelfCareEntry() {
         entryDate: today,
         timeDescriptor: finalTimeDescriptor,
         exactTime,
-        activities: selectedActivities,
+        activities: validActivities,
         useIndividualTimes: false,
         cycleDay: null, // TODO: Calculate cycle day
       };
     }
 
+    console.log("Creating self-care entry with data:", mutationData);
     addSelfCareEntry(mutationData);
   };
 

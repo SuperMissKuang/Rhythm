@@ -220,7 +220,7 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
 
   const addItem = () => {
     if (newItemName.trim()) {
-      const activityKey = newItemName
+      const activity_key = newItemName
         .toLowerCase()
         .replace(/\s+/g, "_")
         .replace(/[^a-z0-9_]/g, "");
@@ -229,7 +229,7 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
         ...items,
         {
           name: newItemName.trim(),
-          activityKey,
+          activity_key,
         },
       ]);
       setNewItemName("");
@@ -283,7 +283,7 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
         : [
             {
               name: name.trim(),
-              activityKey: name
+              activity_key: name
                 .toLowerCase()
                 .replace(/\s+/g, "_")
                 .replace(/[^a-z0-9_]/g, ""),

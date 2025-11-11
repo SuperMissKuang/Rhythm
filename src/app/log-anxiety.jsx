@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,7 +27,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useAppTheme } from "@/utils/theme";
 import { format } from "date-fns";
 import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
-import KeyboardAvoidingAnimatedView from "@/components/KeyboardAvoidingAnimatedView";
 
 const TIME_OPTIONS = [
   { value: "Early Morning", label: "Early Morning (6-9 AM)" },
@@ -186,76 +187,79 @@ export default function LogAnxietyScreen() {
   };
 
   return (
-    <KeyboardAvoidingAnimatedView style={{ flex: 1 }} behavior="padding">
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <StatusBar style={isDark ? "light" : "dark"} />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style={isDark ? "light" : "dark"} />
 
-        {/* Header */}
+      {/* Header */}
+      <View
+        style={{ paddingTop: insets.top, backgroundColor: colors.background }}
+      >
         <View
-          style={{ paddingTop: insets.top, backgroundColor: colors.background }}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 20,
+            paddingVertical: 16,
+          }}
         >
-          <View
+          <TouchableOpacity onPress={() => router.back()}>
+            <ChevronLeft size={24} color={colors.primary} />
+          </TouchableOpacity>
+
+          <Text
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingHorizontal: 20,
-              paddingVertical: 16,
+              fontSize: 20,
+              fontFamily: "Montserrat_600SemiBold",
+              color: colors.primary,
             }}
           >
-            <TouchableOpacity onPress={() => router.back()}>
-              <ChevronLeft size={24} color={colors.primary} />
-            </TouchableOpacity>
+            {isEditMode ? "Edit Anxiety Entry" : "Log Anxiety Attack"}
+          </Text>
 
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={isLoading}
+            style={{
+              backgroundColor:
+                severity && timeDescriptor
+                  ? ANXIETY_COLOR
+                  : colors.placeholder,
+              borderRadius: 20,
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderWidth: 1,
+              borderColor: colors.borderLight,
+            }}
+          >
             <Text
               style={{
-                fontSize: 20,
+                fontSize: 14,
                 fontFamily: "Montserrat_600SemiBold",
-                color: colors.primary,
-              }}
-            >
-              {isEditMode ? "Edit Anxiety Entry" : "Log Anxiety Attack"}
-            </Text>
-
-            <TouchableOpacity
-              onPress={handleSave}
-              disabled={isLoading}
-              style={{
-                backgroundColor:
+                color:
                   severity && timeDescriptor
-                    ? ANXIETY_COLOR
-                    : colors.placeholder,
-                borderRadius: 20,
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderWidth: 1,
-                borderColor: colors.borderLight,
+                    ? getContrastTextColor(ANXIETY_COLOR)
+                    : "#FFFFFF",
               }}
             >
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontFamily: "Montserrat_600SemiBold",
-                  color:
-                    severity && timeDescriptor
-                      ? getContrastTextColor(ANXIETY_COLOR)
-                      : "#FFFFFF",
-                }}
-              >
-                Save
-              </Text>
-            </TouchableOpacity>
-          </View>
+              Save
+            </Text>
+          </TouchableOpacity>
         </View>
+      </View>
 
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{
-            paddingHorizontal: 20,
-            paddingBottom: 40,
-          }}
-          showsVerticalScrollIndicator={false}
-        >
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingBottom: 400,
+        }}
+        showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
+        scrollEnabled={true}
+        removeClippedSubviews={false}
+        keyboardDismissMode="on-drag"
+      >
           {/* Severity Selection */}
           <View style={{ marginBottom: 32 }}>
             <Text
@@ -559,8 +563,7 @@ export default function LogAnxietyScreen() {
               }}
             />
           </View>
-        </ScrollView>
-      </View>
-    </KeyboardAvoidingAnimatedView>
+      </ScrollView>
+    </View>
   );
 }

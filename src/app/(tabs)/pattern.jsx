@@ -60,8 +60,13 @@ export default function PatternScreen() {
     return null;
   }
   
-  // Use default activities if no custom activities are available
-  const activities = customActivities.length > 0 ? customActivities : SELFCARE_CATEGORIES;
+  // Filter out Period and Anxiety from custom activities, then combine with defaults
+  const customSelfCareActivities = customActivities.filter(
+    (activity) => activity.name !== "Anxiety" && activity.name !== "Period"
+  );
+
+  // Combine default activities with custom activities
+  const activities = [...SELFCARE_CATEGORIES, ...customSelfCareActivities];
 
   // Add Period and Anxiety as special activity options
   const periodActivity = {
@@ -484,8 +489,10 @@ export default function PatternScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
         showsVerticalScrollIndicator={false}
+        bounces={true}
+        alwaysBounceVertical={false}
       >
         {/* Header with centered navigation */}
         <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 20 }}>

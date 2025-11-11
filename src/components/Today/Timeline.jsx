@@ -38,7 +38,7 @@ export function Timeline({ timeSlotData }) {
   };
 
   return (
-    <View style={{ flex: 1, paddingHorizontal: 20 }}>
+    <View style={{ paddingHorizontal: 20 }}>
       <Text
         style={{
           fontSize: 16,
@@ -49,7 +49,7 @@ export function Timeline({ timeSlotData }) {
       >
         Timeline
       </Text>
-      <View style={{ flex: 1 }}>
+      <View>
         {TIME_SLOTS.map((timeSlot, index) => {
           const IconComponent = timeSlot.icon;
           const slotEntries = timeSlotData[timeSlot.id];
