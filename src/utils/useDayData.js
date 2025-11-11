@@ -15,7 +15,7 @@ export function useDayData(date) {
 
   // Filter entries for the specified day (memoized to prevent infinite loops)
   const anxietyEntries = useMemo(
-    () => allAnxietyEntries.filter((entry) => entry.entryDate === dayString),
+    () => allAnxietyEntries.filter((entry) => entry.entry_date === dayString),
     [allAnxietyEntries, dayString]
   );
 

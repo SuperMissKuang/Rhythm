@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 
 // Helper function to convert hex to lighter shade for background
 function hexToLightBackground(hex, opacity = 0.2) {
@@ -9,7 +9,7 @@ function hexToLightBackground(hex, opacity = 0.2) {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
-export function ActivityPill({ activity, type }) {
+export function ActivityPill({ activity, type, onPress }) {
   const isAnxiety = type === "anxiety";
 
   // Use activity-specific color or fallback to defaults
@@ -33,8 +33,11 @@ export function ActivityPill({ activity, type }) {
     displayText = activityNames[activity.activity] || activity.activity;
   }
 
+  const PillWrapper = onPress ? TouchableOpacity : View;
+
   return (
-    <View
+    <PillWrapper
+      onPress={onPress}
       style={{
         backgroundColor,
         paddingHorizontal: 8,
@@ -53,6 +56,6 @@ export function ActivityPill({ activity, type }) {
       >
         {displayText}
       </Text>
-    </View>
+    </PillWrapper>
   );
 }

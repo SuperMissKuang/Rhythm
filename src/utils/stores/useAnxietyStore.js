@@ -5,6 +5,29 @@ import { parseISO, isAfter, isBefore } from "date-fns";
 const STORAGE_KEY = "@rhythm:anxiety-entries";
 
 /**
+ * Normalize entry data to use snake_case field names
+ */
+const normalizeEntry = (entry) => {
+  if (!entry) return null;
+
+  return {
+    ...entry,
+    // Normalize field names to snake_case
+    entry_date: entry.entry_date || entry.entryDate,
+    time_descriptor: entry.time_descriptor || entry.timeDescriptor,
+    trigger_description: entry.trigger_description || entry.triggerDescription,
+    exact_time: entry.exact_time || entry.exactTime,
+    cycle_day: entry.cycle_day ?? entry.cycleDay,
+    // Remove camelCase versions if they exist
+    entryDate: undefined,
+    timeDescriptor: undefined,
+    triggerDescription: undefined,
+    exactTime: undefined,
+    cycleDay: undefined,
+  };
+};
+
+/**
  * Zustand store for managing anxiety entry data with AsyncStorage persistence
  */
 export const useAnxietyStore = create((set, get) => ({
@@ -20,10 +43,20 @@ export const useAnxietyStore = create((set, get) => ({
     set({ isLoading: true });
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      const entries = stored ? JSON.parse(stored) : [];
+      let entries = stored ? JSON.parse(stored) : [];
+
+      // Normalize and validate entries data
+      entries = entries
+        .filter(entry => entry && (entry.entry_date || entry.entryDate))
+        .map(normalizeEntry)
+        .filter(entry => entry && entry.entry_date);
+
+      console.log("Loaded anxiety entries from storage:", entries.length);
       set({ entries, isLoading: false, isInitialized: true });
     } catch (error) {
       console.error("Error loading anxiety entries from storage:", error);
+      // Clear corrupt data
+      await AsyncStorage.removeItem(STORAGE_KEY);
       set({ entries: [], isLoading: false, isInitialized: true });
     }
   },
@@ -35,12 +68,17 @@ export const useAnxietyStore = create((set, get) => ({
    */
   createEntry: async (entryData) => {
     try {
+      // Normalize the entry data first
+      const normalizedData = normalizeEntry(entryData);
+
       const newEntry = {
         id: Date.now().toString(),
         userId: "default-user",
         createdAt: new Date().toISOString(),
-        ...entryData,
+        ...normalizedData,
       };
+
+      console.log("Creating anxiety entry with data:", newEntry);
 
       const updatedEntries = [...get().entries, newEntry];
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries));
@@ -61,9 +99,12 @@ export const useAnxietyStore = create((set, get) => ({
    */
   updateEntry: async (id, updates) => {
     try {
+      // Normalize the updates
+      const normalizedUpdates = normalizeEntry(updates);
+
       const updatedEntries = get().entries.map((entry) =>
         entry.id === id
-          ? { ...entry, ...updates, updatedAt: new Date().toISOString() }
+          ? normalizeEntry({ ...entry, ...normalizedUpdates, updatedAt: new Date().toISOString() })
           : entry
       );
 
@@ -106,7 +147,7 @@ export const useAnxietyStore = create((set, get) => ({
    * @returns {Array} Entries for that date
    */
   getEntriesForDate: (date) => {
-    return get().entries.filter((entry) => entry.entryDate === date);
+    return get().entries.filter((entry) => entry.entry_date === date);
   },
 
   /**
@@ -120,7 +161,7 @@ export const useAnxietyStore = create((set, get) => ({
     const end = parseISO(endDate);
 
     return get().entries.filter((entry) => {
-      const entryDate = parseISO(entry.entryDate);
+      const entryDate = parseISO(entry.entry_date);
       return (
         (isAfter(entryDate, start) || entryDate.getTime() === start.getTime()) &&
         (isBefore(entryDate, end) || entryDate.getTime() === end.getTime())

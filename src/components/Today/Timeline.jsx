@@ -1,11 +1,41 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text } from "react-native";
 import { TIME_SLOTS } from "@/utils/constants";
 import { ActivityPill } from "@/components/Today/ActivityPill";
+import { EditAnxietyModal } from "@/components/Today/EditAnxietyModal";
 import { useAppTheme } from "@/utils/theme";
+import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
+import { Alert } from "react-native";
 
 export function Timeline({ timeSlotData }) {
   const { colors } = useAppTheme();
+  const [selectedAnxietyEntry, setSelectedAnxietyEntry] = useState(null);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isDeletingEntry, setIsDeletingEntry] = useState(false);
+
+  const handleAnxietyPress = (entry) => {
+    setSelectedAnxietyEntry(entry);
+    setIsEditModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsEditModalVisible(false);
+    setSelectedAnxietyEntry(null);
+  };
+
+  const handleDeleteAnxiety = async (entryId) => {
+    setIsDeletingEntry(true);
+    try {
+      await useAnxietyStore.getState().deleteEntry(entryId);
+      setIsDeletingEntry(false);
+      handleCloseModal();
+      Alert.alert("Success", "Anxiety entry deleted successfully");
+    } catch (error) {
+      console.error("Error deleting anxiety entry:", error);
+      setIsDeletingEntry(false);
+      Alert.alert("Error", "Failed to delete anxiety entry. Please try again.");
+    }
+  };
 
   return (
     <View style={{ flex: 1, paddingHorizontal: 20 }}>
@@ -91,6 +121,7 @@ export function Timeline({ timeSlotData }) {
                         key={`anxiety-${idx}`}
                         activity={entry}
                         type="anxiety"
+                        onPress={() => handleAnxietyPress(entry)}
                       />
                     ))}
                     {slotEntries.selfCare.map((entry, idx) => (
@@ -107,6 +138,14 @@ export function Timeline({ timeSlotData }) {
           );
         })}
       </View>
+
+      <EditAnxietyModal
+        visible={isEditModalVisible}
+        onClose={handleCloseModal}
+        onDelete={handleDeleteAnxiety}
+        anxietyEntry={selectedAnxietyEntry}
+        isDeletingEntry={isDeletingEntry}
+      />
     </View>
   );
 }

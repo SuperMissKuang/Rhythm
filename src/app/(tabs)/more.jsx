@@ -138,7 +138,25 @@ export default function MoreScreen() {
   };
 
   // Use default activities if no custom activities are available
-  const activities = customActivities.length > 0 ? customActivities : SELFCARE_CATEGORIES;
+  let activities = customActivities.length > 0 ? customActivities : SELFCARE_CATEGORIES;
+
+  // Add Period and Anxiety as special built-in activities (non-editable)
+  const periodActivity = {
+    id: "period",
+    name: "Period",
+    color_hex: "#F8BBD9",
+    isBuiltIn: true,
+  };
+
+  const anxietyActivity = {
+    id: "anxiety",
+    name: "Anxiety",
+    color_hex: "#5F27CD",
+    isBuiltIn: true,
+  };
+
+  // Combine built-in activities with custom/default activities
+  activities = [periodActivity, anxietyActivity, ...activities];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -251,29 +269,32 @@ export default function MoreScreen() {
                     </Text>
                   </View>
 
-                  <View style={{ flexDirection: "row", gap: 8 }}>
-                    <TouchableOpacity
-                      onPress={() => handleEditActivity(activity)}
-                      style={{
-                        padding: 8,
-                        borderRadius: 8,
-                        backgroundColor: colors.background,
-                      }}
-                    >
-                      <Edit size={16} color={colors.secondary} />
-                    </TouchableOpacity>
+                  {/* Only show edit/delete for non-built-in activities */}
+                  {!activity.isBuiltIn && (
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <TouchableOpacity
+                        onPress={() => handleEditActivity(activity)}
+                        style={{
+                          padding: 8,
+                          borderRadius: 8,
+                          backgroundColor: colors.background,
+                        }}
+                      >
+                        <Edit size={16} color={colors.secondary} />
+                      </TouchableOpacity>
 
-                    <TouchableOpacity
-                      onPress={() => handleDeleteActivity(activity)}
-                      style={{
-                        padding: 8,
-                        borderRadius: 8,
-                        backgroundColor: colors.background,
-                      }}
-                    >
-                      <Trash2 size={16} color="#E53E3E" />
-                    </TouchableOpacity>
-                  </View>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteActivity(activity)}
+                        style={{
+                          padding: 8,
+                          borderRadius: 8,
+                          backgroundColor: colors.background,
+                        }}
+                      >
+                        <Trash2 size={16} color="#E53E3E" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
 
                 {/* Sub-activities */}
@@ -314,7 +335,11 @@ export default function MoreScreen() {
                           color: colors.secondary,
                         }}
                       >
-                        {activity.name}
+                        {activity.isBuiltIn
+                          ? (activity.name === "Period"
+                              ? "Track your menstrual cycle"
+                              : "Log anxiety attacks and severity")
+                          : activity.name}
                       </Text>
                     )}
                   </View>

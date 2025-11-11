@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -21,7 +21,7 @@ import {
   ChevronUp,
   Check,
 } from "lucide-react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useAppTheme } from "@/utils/theme";
 import { format } from "date-fns";
 import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
@@ -72,26 +72,53 @@ const getContrastTextColor = (backgroundColor) => {
 export default function LogAnxietyScreen() {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
+  const { editId } = useLocalSearchParams();
 
   const [severity, setSeverity] = useState(null);
   const [timeDescriptor, setTimeDescriptor] = useState(null);
   const [trigger, setTrigger] = useState("");
   const [showTimeOptions, setShowTimeOptions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Montserrat_500Medium,
     Montserrat_600SemiBold,
   });
 
-  const addAnxietyEntry = async (data) => {
+  // Load existing entry if editing
+  useEffect(() => {
+    if (editId) {
+      const entry = useAnxietyStore.getState().entries.find(e => e.id === editId);
+      if (entry) {
+        setIsEditMode(true);
+        setSeverity(entry.severity);
+        setTimeDescriptor(entry.time_descriptor);
+        setTrigger(entry.trigger_description || "");
+        // Show time options if not "Now"
+        if (entry.time_descriptor !== "Now") {
+          setShowTimeOptions(true);
+        }
+      }
+    }
+  }, [editId]);
+
+  const saveAnxietyEntry = async (data) => {
     setIsLoading(true);
     try {
-      await useAnxietyStore.getState().createEntry(data);
-      setIsLoading(false);
-      Alert.alert("Success", "Anxiety entry saved successfully", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      if (isEditMode && editId) {
+        await useAnxietyStore.getState().updateEntry(editId, data);
+        setIsLoading(false);
+        Alert.alert("Success", "Anxiety entry updated successfully", [
+          { text: "OK", onPress: () => router.back() },
+        ]);
+      } else {
+        await useAnxietyStore.getState().createEntry(data);
+        setIsLoading(false);
+        Alert.alert("Success", "Anxiety entry saved successfully", [
+          { text: "OK", onPress: () => router.back() },
+        ]);
+      }
     } catch (error) {
       console.error("Error saving anxiety entry:", error);
       setIsLoading(false);
@@ -139,7 +166,7 @@ export default function LogAnxietyScreen() {
       }
     }
 
-    addAnxietyEntry({
+    const entryData = {
       userId: "default-user",
       entryDate: today,
       timeDescriptor: finalTimeDescriptor,
@@ -147,7 +174,15 @@ export default function LogAnxietyScreen() {
       severity,
       triggerDescription: trigger || null,
       cycleDay: null, // TODO: Calculate cycle day
-    });
+    };
+
+    // Don't include entry_date for updates, it should remain unchanged
+    if (isEditMode) {
+      delete entryData.entryDate;
+      delete entryData.userId;
+    }
+
+    saveAnxietyEntry(entryData);
   };
 
   return (
@@ -179,7 +214,7 @@ export default function LogAnxietyScreen() {
                 color: colors.primary,
               }}
             >
-              Log Anxiety Attack
+              {isEditMode ? "Edit Anxiety Entry" : "Log Anxiety Attack"}
             </Text>
 
             <TouchableOpacity

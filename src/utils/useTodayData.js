@@ -15,7 +15,7 @@ export function useTodayData() {
 
   // Filter entries for today (memoized to prevent infinite loops)
   const anxietyEntries = useMemo(
-    () => allAnxietyEntries.filter((entry) => entry.entryDate === today),
+    () => allAnxietyEntries.filter((entry) => entry.entry_date === today),
     [allAnxietyEntries, today]
   );
 

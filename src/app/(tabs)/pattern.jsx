@@ -63,7 +63,7 @@ export default function PatternScreen() {
   // Use default activities if no custom activities are available
   const activities = customActivities.length > 0 ? customActivities : SELFCARE_CATEGORIES;
 
-  // Add Period as a special activity option
+  // Add Period and Anxiety as special activity options
   const periodActivity = {
     id: "period",
     name: "Period",
@@ -75,8 +75,19 @@ export default function PatternScreen() {
     dark_saturation_min: 1,
   };
 
-  // Combine period with other activities
-  const allActivities = [periodActivity, ...activities];
+  const anxietyActivity = {
+    id: "anxiety",
+    name: "Anxiety",
+    color_hex: "#5F27CD",
+    light_saturation_min: 1,
+    light_saturation_max: 1,
+    medium_saturation_min: 1,
+    medium_saturation_max: 1,
+    dark_saturation_min: 1,
+  };
+
+  // Combine period, anxiety, and other activities
+  const allActivities = [periodActivity, anxietyActivity, ...activities];
 
   // Set default selected filter to the first activity if none selected
   const currentSelectedFilter =
