@@ -139,10 +139,22 @@ export function MonthDetailModal({
       ) || [];
 
     const activityCount = selfCareEntries.reduce((sum, entry) => {
-      const matchingActivities = entry.activities.filter((activity) =>
-        activityKeys.includes(activity),
-      );
-      return sum + matchingActivities.length;
+      // Handle both new format (activity_times) and legacy format (activities)
+      if (entry.activity_times) {
+        // New format: activity_times is an object with activity keys
+        const entryActivityKeys = Object.keys(entry.activity_times);
+        const matchingCount = entryActivityKeys.filter((key) =>
+          activityKeys.includes(key),
+        ).length;
+        return sum + matchingCount;
+      } else if (entry.activities) {
+        // Legacy format: activities is an array
+        const matchingActivities = entry.activities.filter((activity) =>
+          activityKeys.includes(activity),
+        );
+        return sum + matchingActivities.length;
+      }
+      return sum;
     }, 0);
 
     return { count: activityCount, hasData: activityCount > 0 };

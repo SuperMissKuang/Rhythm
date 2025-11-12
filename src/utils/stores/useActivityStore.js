@@ -95,6 +95,33 @@ export const useActivityStore = create((set, get) => ({
         })));
       }
 
+      // Normalize all activity items to use snake_case activity_key
+      let needsNormalization = false;
+      activities = activities.map(activity => {
+        if (activity.items && activity.items.length > 0) {
+          const normalizedItems = activity.items.map(item => {
+            // Check if item uses camelCase activityKey instead of snake_case activity_key
+            if (item.activityKey && !item.activity_key) {
+              needsNormalization = true;
+              return {
+                ...item,
+                activity_key: item.activityKey,
+                activityKey: undefined, // Remove camelCase version
+              };
+            }
+            return item;
+          });
+          return { ...activity, items: normalizedItems };
+        }
+        return activity;
+      });
+
+      // Save normalized data if any changes were made
+      if (needsNormalization) {
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(activities));
+        console.log("Migration: Normalized activity item field names to snake_case");
+      }
+
       set({ activities, isLoading: false, isInitialized: true });
     } catch (error) {
       console.error("Error loading custom activities from storage:", error);

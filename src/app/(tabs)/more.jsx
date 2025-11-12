@@ -285,44 +285,58 @@ export default function MoreScreen() {
 
                 {/* Sub-activities */}
                 <View style={{ marginBottom: 12 }}>
-                  <View style={{ gap: 8 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                      gap: 6,
+                    }}
+                  >
                     {activity.items && activity.items.length > 0 ? (
-                      <>
-                        {activity.items.slice(0, 3).map((item) => (
+                      activity.items.map((item) => (
+                        <View
+                          key={item.id}
+                          style={{
+                            backgroundColor: colors.surface,
+                            borderRadius: 12,
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                            borderWidth: 1,
+                            borderColor: colors.borderLight,
+                          }}
+                        >
                           <Text
-                            key={item.id}
                             style={{
-                              fontSize: 14,
+                              fontSize: 12,
                               fontFamily: "Montserrat_500Medium",
                               color: colors.secondary,
                             }}
                           >
                             {item.name}
                           </Text>
-                        ))}
-                        {activity.items.length > 3 && (
-                          <Text
-                            style={{
-                              fontSize: 14,
-                              fontFamily: "Montserrat_500Medium",
-                              color: colors.secondary,
-                              fontStyle: "italic",
-                            }}
-                          >
-                            +{activity.items.length - 3} more items
-                          </Text>
-                        )}
-                      </>
+                        </View>
+                      ))
                     ) : (
-                      <Text
+                      <View
                         style={{
-                          fontSize: 14,
-                          fontFamily: "Montserrat_500Medium",
-                          color: colors.secondary,
+                          backgroundColor: colors.surface,
+                          borderRadius: 12,
+                          paddingHorizontal: 10,
+                          paddingVertical: 4,
+                          borderWidth: 1,
+                          borderColor: colors.borderLight,
                         }}
                       >
-                        {activity.name}
-                      </Text>
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontFamily: "Montserrat_500Medium",
+                            color: colors.secondary,
+                          }}
+                        >
+                          {activity.name}
+                        </Text>
+                      </View>
                     )}
                   </View>
                 </View>

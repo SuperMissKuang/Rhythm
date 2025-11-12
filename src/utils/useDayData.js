@@ -90,25 +90,6 @@ export function useDayData(date) {
             }
           },
         );
-      } else {
-        const timeSlot = TIME_SLOTS.find((slot) =>
-          slot.timeDescriptors.includes(entry.time_descriptor),
-        );
-        if (timeSlot) {
-          entry.activities.forEach((activity) => {
-            if (!activity) return; // Skip null/undefined activities
-
-            // Get color directly from activity_key lookup
-            const color = activityColors[activity] || "#4ECDC4";
-
-            slotData[timeSlot.id].selfCare.push({
-              ...entry, // Include full entry for edit/delete
-              activity,
-              timeDescriptor: entry.time_descriptor,
-              color,
-            });
-          });
-        }
       }
     });
 

@@ -26,7 +26,7 @@ import {
 } from "lucide-react-native";
 import { useActivityStore } from "@/utils/stores/useActivityStore";
 
-// Predefined color palette - 8 bright and distinct colors
+// Predefined color palette - 10 bright and distinct colors
 const COLOR_PALETTE = [
   "#FF6B6B", // Red
   "#4ECDC4", // Teal
@@ -36,6 +36,8 @@ const COLOR_PALETTE = [
   "#FF1493", // Deep Pink
   "#5F27CD", // Purple
   "#FF9F43", // Orange
+  "#E74C3C", // Crimson Red
+  "#16A085", // Turquoise
 ];
 
 // Utility function to calculate color luminance for contrast
@@ -70,6 +72,9 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
   const [items, setItems] = useState([]);
   const [newItemName, setNewItemName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Get all activities to check which colors are occupied
+  const allActivities = useActivityStore((state) => state.activities);
 
   // Frequency configuration
   const [lightMin, setLightMin] = useState(1);
@@ -180,6 +185,7 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
       name !== originalValues.name ||
       selectedColor !== originalValues.selectedColor ||
       JSON.stringify(currentItems) !== JSON.stringify(originalValues.items) ||
+      newItemName.trim().length > 0 || // Check if there's a pending sub-activity
       lightMin !== originalValues.lightMin ||
       lightMax !== originalValues.lightMax ||
       mediumMin !== originalValues.mediumMin ||
@@ -214,27 +220,16 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
 
   const saveButtonState = getSaveButtonState();
 
+  // Check if a color is occupied by another activity (excluding current activity being edited)
+  const isColorOccupied = (color) => {
+    return allActivities.some(
+      (act) => act.color_hex === color && act.id !== activity?.id
+    );
+  };
+
   if (!fontsLoaded) {
     return null;
   }
-
-  const addItem = () => {
-    if (newItemName.trim()) {
-      const activity_key = newItemName
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_]/g, "");
-
-      setItems([
-        ...items,
-        {
-          name: newItemName.trim(),
-          activity_key,
-        },
-      ]);
-      setNewItemName("");
-    }
-  };
 
   const removeItem = (index) => {
     setItems(items.filter((_, i) => i !== index));
@@ -276,19 +271,36 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
       return;
     }
 
-    // If no items provided, create a default item using the activity name
-    const finalItems =
-      items.length > 0
-        ? items
-        : [
-            {
-              name: name.trim(),
-              activity_key: name
-                .toLowerCase()
-                .replace(/\s+/g, "_")
-                .replace(/[^a-z0-9_]/g, ""),
-            },
-          ];
+    // Add pending sub-activity if user has typed one but not yet added it
+    let finalItems = [...items];
+    if (newItemName.trim()) {
+      const activity_key = newItemName
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "");
+
+      finalItems.push({
+        id: activity_key,
+        name: newItemName.trim(),
+        activity_key,
+      });
+    }
+
+    // If no items provided at all, create a default item using the activity name
+    if (finalItems.length === 0) {
+      const activity_key = name
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "");
+
+      finalItems = [
+        {
+          id: activity_key,
+          name: name.trim(),
+          activity_key,
+        },
+      ];
+    }
 
     const data = {
       name: name.trim(),
@@ -441,28 +453,52 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
             >
               Color
             </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-              {COLOR_PALETTE.map((color) => (
-                <TouchableOpacity
-                  key={color}
-                  onPress={() => setSelectedColor(color)}
-                  style={{
-                    width: 40,
-                    height: 40,
-                    backgroundColor: color,
-                    borderRadius: 20,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    borderWidth: 3,
-                    borderColor:
-                      selectedColor === color ? colors.primary : "transparent",
-                  }}
-                >
-                  {selectedColor === color && (
-                    <Check size={20} color="#FFFFFF" />
-                  )}
-                </TouchableOpacity>
-              ))}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                paddingHorizontal: 4,
+                paddingVertical: 8,
+              }}
+            >
+              {COLOR_PALETTE.map((color) => {
+                const occupied = isColorOccupied(color);
+                const isSelected = selectedColor === color;
+
+                return (
+                  <TouchableOpacity
+                    key={color}
+                    onPress={() => !occupied && setSelectedColor(color)}
+                    disabled={occupied}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      backgroundColor: color,
+                      borderRadius: 16,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      borderWidth: 3,
+                      borderColor: isSelected ? colors.primary : "transparent",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {isSelected && (
+                      <Check size={16} color="#FFFFFF" />
+                    )}
+                    {occupied && (
+                      <View
+                        style={{
+                          position: "absolute",
+                          width: 45,
+                          height: 2,
+                          backgroundColor: "#D1D5DB",
+                          transform: [{ rotate: "45deg" }],
+                        }}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
 
@@ -516,47 +552,23 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
             </View>
 
             {/* Add New Item */}
-            <View
+            <TextInput
+              value={newItemName}
+              onChangeText={setNewItemName}
+              placeholder="Add sub-activity..."
+              placeholderTextColor={colors.placeholder}
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
+                backgroundColor: colors.surface,
+                borderRadius: 12,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                fontSize: 14,
+                fontFamily: "Montserrat_500Medium",
+                color: colors.primary,
+                borderWidth: 1,
+                borderColor: colors.borderLight,
               }}
-            >
-              <TextInput
-                value={newItemName}
-                onChangeText={setNewItemName}
-                placeholder="Add sub-activity..."
-                placeholderTextColor={colors.placeholder}
-                style={{
-                  flex: 1,
-                  backgroundColor: colors.surface,
-                  borderRadius: 12,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  fontSize: 14,
-                  fontFamily: "Montserrat_500Medium",
-                  color: colors.primary,
-                  borderWidth: 1,
-                  borderColor: colors.borderLight,
-                }}
-                returnKeyType="done"
-                onSubmitEditing={addItem}
-              />
-              <TouchableOpacity
-                onPress={addItem}
-                disabled={!newItemName.trim()}
-                style={{
-                  backgroundColor: newItemName.trim()
-                    ? colors.primary
-                    : colors.placeholder,
-                  borderRadius: 12,
-                  padding: 8,
-                }}
-              >
-                <Check size={16} color={isDark ? "#000000" : "#FFFFFF"} />
-              </TouchableOpacity>
-            </View>
+            />
           </View>
 
           {/* Frequency Configuration */}

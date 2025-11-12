@@ -41,7 +41,12 @@ export function useSelfCareEntry() {
       const entry = useSelfCareStore.getState().entries.find(e => e.id === editId);
       if (entry) {
         setIsEditMode(true);
-        setSelectedActivities(entry.activities || []);
+
+        // Extract activity keys from activity_times (new format) or activities (legacy)
+        const activityKeys = entry.activity_times
+          ? Object.keys(entry.activity_times)
+          : (entry.activities || []);
+        setSelectedActivities(activityKeys);
 
         // Set timing approach
         if (entry.use_individual_times) {
@@ -265,11 +270,10 @@ export function useSelfCareEntry() {
 
       mutationData = {
         userId: "default-user",
-        entryDate: today,
-        activities: validActivities,
-        useIndividualTimes: true,
-        activityTimes: convertedActivityTimes,
-        cycleDay: null, // TODO: Calculate cycle day
+        entry_date: today,
+        use_individual_times: true,
+        activity_times: convertedActivityTimes,
+        cycle_day: null, // TODO: Calculate cycle day
       };
     } else {
       // Single time approach - convert "Now" to actual time descriptor
@@ -277,20 +281,29 @@ export function useSelfCareEntry() {
       const exactTime =
         timeDescriptor === "Now" ? format(now, "HH:mm:ss") : null;
 
+      // Convert to activity_times format (same time for all activities)
+      const singleTimeActivityTimes = {};
+      validActivities.forEach((activityId) => {
+        singleTimeActivityTimes[activityId] = {
+          timeDescriptor: finalTimeDescriptor,
+          exactTime,
+        };
+      });
+
       mutationData = {
         userId: "default-user",
-        entryDate: today,
-        timeDescriptor: finalTimeDescriptor,
-        exactTime,
-        activities: validActivities,
-        useIndividualTimes: false,
-        cycleDay: null, // TODO: Calculate cycle day
+        entry_date: today,
+        time_descriptor: finalTimeDescriptor,
+        exact_time: exactTime,
+        activity_times: singleTimeActivityTimes,
+        use_individual_times: false,
+        cycle_day: null, // TODO: Calculate cycle day
       };
     }
 
     // Don't include entry_date, userId for updates, they should remain unchanged
     if (isEditMode) {
-      delete mutationData.entryDate;
+      delete mutationData.entry_date;
       delete mutationData.userId;
     }
 

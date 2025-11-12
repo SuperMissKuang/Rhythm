@@ -53,6 +53,41 @@ export const useSelfCareStore = create((set, get) => ({
         .map(normalizeEntry)
         .filter(entry => entry && entry.entry_date);
 
+      // Migrate legacy format to new format
+      let migrationCount = 0;
+      entries = entries.map(entry => {
+        // Check if entry uses legacy format (has activities array but no activity_times)
+        if (entry.activities && Array.isArray(entry.activities) && !entry.activity_times) {
+          migrationCount++;
+
+          // Convert legacy activities array to activity_times object
+          const activity_times = {};
+          entry.activities.forEach(activityKey => {
+            if (activityKey) {
+              activity_times[activityKey] = {
+                timeDescriptor: entry.time_descriptor || "Afternoon"
+              };
+            }
+          });
+
+          // Return migrated entry without the legacy activities field
+          const { activities, ...rest } = entry;
+          return {
+            ...rest,
+            activity_times,
+            use_individual_times: false, // Legacy entries used single time for all
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return entry;
+      });
+
+      // Save migrated data if any migrations occurred
+      if (migrationCount > 0) {
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+        console.log(`Migrated ${migrationCount} self-care entries from legacy format to activity_times format`);
+      }
+
       console.log("Loaded self-care entries from storage:", entries.length);
       set({ entries, isLoading: false, isInitialized: true });
     } catch (error) {
