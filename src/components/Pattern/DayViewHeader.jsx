@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { useAppTheme } from "@/utils/theme";
 import { CompactCycleWheel } from "@/components/Today/CompactCycleWheel";
 
@@ -11,10 +12,13 @@ export function DayViewHeader({
   currentPhase,
   totalDays,
   scaledPhases,
+  onPreviousDay,
+  onNextDay,
 }) {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const formattedDate = format(date, "EEE, MMM d");
+  const formattedDate = format(date, "EEE, MMM d, yyyy");
+  const isToday = isSameDay(date, new Date());
 
   return (
     <View
@@ -33,15 +37,46 @@ export function DayViewHeader({
           marginBottom: 20,
         }}
       >
+        <TouchableOpacity
+          onPress={onPreviousDay}
+          style={{
+            padding: 8,
+            backgroundColor: colors.surface,
+            borderRadius: 6,
+            borderWidth: 1,
+            borderColor: colors.borderLight,
+          }}
+        >
+          <ChevronLeft size={20} color={colors.primary} />
+        </TouchableOpacity>
+
         <Text
           style={{
             fontSize: 20,
             fontFamily: "Montserrat_600SemiBold",
             color: colors.primary,
+            marginHorizontal: 20,
+            minWidth: 200,
+            textAlign: "center",
           }}
         >
           {formattedDate}
         </Text>
+
+        <TouchableOpacity
+          onPress={onNextDay}
+          disabled={isToday}
+          style={{
+            padding: 8,
+            backgroundColor: colors.surface,
+            borderRadius: 6,
+            borderWidth: 1,
+            borderColor: colors.borderLight,
+            opacity: isToday ? 0.3 : 1,
+          }}
+        >
+          <ChevronRight size={20} color={colors.primary} />
+        </TouchableOpacity>
       </View>
 
       <View style={{ alignItems: "center", marginBottom: 20 }}>

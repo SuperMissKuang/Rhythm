@@ -1,15 +1,22 @@
-import React from "react";
-import { View, Text } from "react-native";
+import React, { useRef, useMemo, useState, useCallback } from "react";
+import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { format } from "date-fns";
 import { router } from "expo-router";
+import BottomSheet, { BottomSheetBackdrop } from "@gorhom/bottom-sheet";
+import { Plus } from "lucide-react-native";
 import { TIME_SLOTS } from "@/utils/constants";
 import { ActivityPill } from "@/components/Today/ActivityPill";
 import { useAppTheme } from "@/utils/theme";
 
 export function DayViewTimeline({ timeSlotData, date }) {
   const { colors } = useAppTheme();
+  const bottomSheetRef = useRef(null);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
+  const snapPoints = useMemo(() => ["25%"], []);
+
   const isToday =
     format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+  const dateString = format(date, "yyyy-MM-dd");
 
   // Navigate directly to edit pages
   const handleAnxietyPress = (entry) => {
@@ -26,19 +33,58 @@ export function DayViewTimeline({ timeSlotData, date }) {
     });
   };
 
+  const handleAddPress = (timeSlotId) => {
+    setSelectedTimeSlot(timeSlotId);
+    bottomSheetRef.current?.expand();
+  };
+
+  const handleLogTypeSelect = (logType) => {
+    bottomSheetRef.current?.close();
+
+    if (logType === "anxiety") {
+      router.push({
+        pathname: "/log-anxiety",
+        params: { date: dateString, timeSlot: selectedTimeSlot },
+      });
+    } else if (logType === "selfcare") {
+      router.push({
+        pathname: "/log-selfcare",
+        params: { date: dateString, timeSlot: selectedTimeSlot },
+      });
+    }
+
+    setSelectedTimeSlot(null);
+  };
+
+  const renderBackdrop = useCallback(
+    (props) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+      />
+    ),
+    []
+  );
+
   return (
-    <View style={{ flex: 1, paddingHorizontal: 20 }}>
-      <Text
-        style={{
-          fontSize: 16,
-          fontFamily: "Montserrat_600SemiBold",
-          color: colors.primary,
-          marginBottom: 16,
-        }}
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
       >
-        Timeline
-      </Text>
-      <View style={{ flex: 1 }}>
+        <Text
+          style={{
+            fontSize: 16,
+            fontFamily: "Montserrat_600SemiBold",
+            color: colors.primary,
+            marginBottom: 16,
+          }}
+        >
+          Your Day
+        </Text>
         {TIME_SLOTS.map((timeSlot, index) => {
           const IconComponent = timeSlot.icon;
           const slotEntries = timeSlotData[timeSlot.id];
@@ -99,12 +145,13 @@ export function DayViewTimeline({ timeSlotData, date }) {
                       fontFamily: "Montserrat_500Medium",
                       color: colors.placeholder,
                       fontStyle: "italic",
+                      marginBottom: 8,
                     }}
                   >
                     No activities
                   </Text>
                 ) : (
-                  <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 8 }}>
                     {slotEntries.anxiety.map((entry, idx) => (
                       <ActivityPill
                         key={`anxiety-${idx}`}
@@ -123,11 +170,110 @@ export function DayViewTimeline({ timeSlotData, date }) {
                     ))}
                   </View>
                 )}
+
+                <TouchableOpacity
+                  onPress={() => handleAddPress(timeSlot.id)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 6,
+                    paddingHorizontal: 12,
+                    backgroundColor: colors.surface,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: colors.borderLight,
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  <Plus size={14} color={colors.primary} />
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontFamily: "Montserrat_600SemiBold",
+                      color: colors.primary,
+                      marginLeft: 4,
+                    }}
+                  >
+                    Add
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
           );
         })}
-      </View>
+      </ScrollView>
+
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={-1}
+        snapPoints={snapPoints}
+        enablePanDownToClose
+        backdropComponent={renderBackdrop}
+        backgroundStyle={{ backgroundColor: colors.surface }}
+        handleIndicatorStyle={{ backgroundColor: colors.borderLight }}
+      >
+        <View style={{ padding: 20 }}>
+          <Text
+            style={{
+              fontSize: 16,
+              fontFamily: "Montserrat_600SemiBold",
+              color: colors.primary,
+              marginBottom: 16,
+            }}
+          >
+            What would you like to log?
+          </Text>
+
+          <TouchableOpacity
+            onPress={() => handleLogTypeSelect("anxiety")}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              backgroundColor: "#EDE6FF",
+              borderRadius: 12,
+              marginBottom: 12,
+            }}
+          >
+            <Plus size={20} color="#5F27CD" />
+            <Text
+              style={{
+                fontSize: 14,
+                fontFamily: "Montserrat_600SemiBold",
+                color: "#5F27CD",
+                marginLeft: 8,
+              }}
+            >
+              Log Anxiety
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => handleLogTypeSelect("selfcare")}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              backgroundColor: "#D4F4DD",
+              borderRadius: 12,
+            }}
+          >
+            <Plus size={20} color="#27AE60" />
+            <Text
+              style={{
+                fontSize: 14,
+                fontFamily: "Montserrat_600SemiBold",
+                color: "#27AE60",
+                marginLeft: 8,
+              }}
+            >
+              Log Self Care
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
     </View>
   );
 }

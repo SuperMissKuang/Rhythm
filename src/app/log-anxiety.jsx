@@ -26,6 +26,7 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 import { useAppTheme } from "@/utils/theme";
 import { format } from "date-fns";
+import Toast from "react-native-toast-message";
 import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
 
 const TIME_OPTIONS = [
@@ -73,10 +74,10 @@ const getContrastTextColor = (backgroundColor) => {
 export default function LogAnxietyScreen() {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
-  const { editId } = useLocalSearchParams();
+  const { editId, date, timeSlot } = useLocalSearchParams();
 
   const [severity, setSeverity] = useState(null);
-  const [timeDescriptor, setTimeDescriptor] = useState(null);
+  const [timeDescriptor, setTimeDescriptor] = useState(timeSlot || null);
   const [trigger, setTrigger] = useState("");
   const [showTimeOptions, setShowTimeOptions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -110,15 +111,25 @@ export default function LogAnxietyScreen() {
       if (isEditMode && editId) {
         await useAnxietyStore.getState().updateEntry(editId, data);
         setIsLoading(false);
-        Alert.alert("Success", "Anxiety entry updated successfully", [
-          { text: "OK", onPress: () => router.back() },
-        ]);
+        Toast.show({
+          type: "success",
+          text1: "Entry updated!",
+          text2: "Anxiety entry saved",
+          position: "bottom",
+          visibilityTime: 2000,
+        });
+        router.back();
       } else {
         await useAnxietyStore.getState().createEntry(data);
         setIsLoading(false);
-        Alert.alert("Success", "Anxiety entry saved successfully", [
-          { text: "OK", onPress: () => router.back() },
-        ]);
+        Toast.show({
+          type: "success",
+          text1: "Entry saved!",
+          text2: "Anxiety logged",
+          position: "bottom",
+          visibilityTime: 2000,
+        });
+        router.back();
       }
     } catch (error) {
       console.error("Error saving anxiety entry:", error);
@@ -144,7 +155,8 @@ export default function LogAnxietyScreen() {
 
     const now = new Date();
     const currentHour = now.getHours();
-    const today = format(now, "yyyy-MM-dd");
+    // Use provided date parameter or default to today
+    const entryDate = date || format(now, "yyyy-MM-dd");
 
     // Convert "Now" to appropriate time descriptor based on current time
     let finalTimeDescriptor = timeDescriptor;
@@ -169,7 +181,7 @@ export default function LogAnxietyScreen() {
 
     const entryData = {
       userId: "default-user",
-      entryDate: today,
+      entryDate: entryDate,
       timeDescriptor: finalTimeDescriptor,
       exactTime,
       severity,

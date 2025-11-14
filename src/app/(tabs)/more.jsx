@@ -9,6 +9,7 @@ import {
 } from "@expo-google-fonts/montserrat";
 import { useAppTheme } from "@/utils/theme";
 import { Plus, Edit, Trash2, Palette, Download, Upload } from "lucide-react-native";
+import Toast from "react-native-toast-message";
 import ActivityModal from "../../components/More/ActivityModal";
 import { useActivityStore } from "@/utils/stores/useActivityStore";
 import { exportAndShare, getExportStats } from "@/utils/storage/dataExport";
@@ -95,10 +96,13 @@ export default function MoreScreen() {
       }
 
       await exportAndShare();
-      Alert.alert(
-        "Success",
-        `Exported ${totalItems} items successfully!`
-      );
+      Toast.show({
+        type: "success",
+        text1: "Export successful!",
+        text2: `Exported ${totalItems} items`,
+        position: "bottom",
+        visibilityTime: 3000,
+      });
     } catch (error) {
       console.error("Export error:", error);
       Alert.alert("Error", "Failed to export data. Please try again.");
@@ -121,14 +125,13 @@ export default function MoreScreen() {
           stats.anxietyEntriesImported +
           stats.customActivitiesImported;
 
-        Alert.alert(
-          "Import Successful",
-          `Imported ${totalImported} items:\n` +
-            `• ${stats.cyclesImported} cycles\n` +
-            `• ${stats.selfCareEntriesImported} self-care entries\n` +
-            `• ${stats.anxietyEntriesImported} anxiety entries\n` +
-            `• ${stats.customActivitiesImported} custom activities`
-        );
+        Toast.show({
+          type: "success",
+          text1: "Import successful!",
+          text2: `Imported ${totalImported} items from backup`,
+          position: "bottom",
+          visibilityTime: 3000,
+        });
       }
     } catch (error) {
       console.error("Import error:", error);

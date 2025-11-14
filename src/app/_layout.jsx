@@ -6,6 +6,7 @@ import { useCycleStore } from "@/utils/stores/useCycleStore";
 import { useSelfCareStore } from "@/utils/stores/useSelfCareStore";
 import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
 import { useActivityStore } from "@/utils/stores/useActivityStore";
+import Toast from "react-native-toast-message";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -47,6 +48,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }} initialRouteName="index">
         <Stack.Screen name="index" />
       </Stack>
+      <Toast />
     </GestureHandlerRootView>
   );
 }

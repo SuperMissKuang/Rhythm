@@ -9,6 +9,7 @@ import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
 import { useSelfCareStore } from "@/utils/stores/useSelfCareStore";
 import { Alert } from "react-native";
 import { router } from "expo-router";
+import Toast from "react-native-toast-message";
 
 export function Timeline({ timeSlotData }) {
   const { colors } = useAppTheme();
@@ -36,7 +37,13 @@ export function Timeline({ timeSlotData }) {
       await useAnxietyStore.getState().deleteEntry(entryId);
       setIsDeletingEntry(false);
       handleCloseModal();
-      Alert.alert("Success", "Anxiety entry deleted successfully");
+      Toast.show({
+        type: "success",
+        text1: "Entry deleted",
+        text2: "Anxiety entry removed",
+        position: "bottom",
+        visibilityTime: 2000,
+      });
     } catch (error) {
       console.error("Error deleting anxiety entry:", error);
       setIsDeletingEntry(false);
@@ -63,7 +70,13 @@ export function Timeline({ timeSlotData }) {
       await useSelfCareStore.getState().deleteEntry(entryId);
       setIsDeletingSelfCareEntry(false);
       handleCloseSelfCareModal();
-      Alert.alert("Success", "Self-care entry deleted successfully");
+      Toast.show({
+        type: "success",
+        text1: "Entry deleted",
+        text2: "Self-care entry removed",
+        position: "bottom",
+        visibilityTime: 2000,
+      });
     } catch (error) {
       console.error("Error deleting self-care entry:", error);
       setIsDeletingSelfCareEntry(false);

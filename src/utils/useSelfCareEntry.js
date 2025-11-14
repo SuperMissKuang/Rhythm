@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { Alert } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { format } from "date-fns";
+import Toast from "react-native-toast-message";
 import { SELFCARE_CATEGORIES } from "@/utils/selfcareConstants";
 import { useSelfCareStore } from "./stores/useSelfCareStore";
 import { useActivityStore } from "./stores/useActivityStore";
 
 export function useSelfCareEntry() {
-  const { editId } = useLocalSearchParams();
-  const [timeDescriptor, setTimeDescriptor] = useState(null);
+  const { editId, date, timeSlot } = useLocalSearchParams();
+  const [timeDescriptor, setTimeDescriptor] = useState(timeSlot || null);
   const [selectedActivities, setSelectedActivities] = useState([]);
   const [expandedCategories, setExpandedCategories] = useState([]);
   const [useIndividualTimes, setUseIndividualTimes] = useState(null);
@@ -137,17 +138,27 @@ export function useSelfCareEntry() {
         await useSelfCareStore.getState().updateEntry(editId, data);
         console.log("Update complete");
         setIsLoading(false);
-        Alert.alert("Success", "Self-care entry updated successfully", [
-          { text: "OK", onPress: () => router.back() },
-        ]);
+        Toast.show({
+          type: "success",
+          text1: "Entry updated!",
+          text2: "Your self-care entry was saved",
+          position: "bottom",
+          visibilityTime: 2000,
+        });
+        router.back();
       } else {
         console.log("Calling createEntry");
         await useSelfCareStore.getState().createEntry(data);
         console.log("Create complete");
         setIsLoading(false);
-        Alert.alert("Success", "Self-care activity saved successfully", [
-          { text: "OK", onPress: () => router.back() },
-        ]);
+        Toast.show({
+          type: "success",
+          text1: "Entry saved!",
+          text2: "Self-care activity logged",
+          position: "bottom",
+          visibilityTime: 2000,
+        });
+        router.back();
       }
     } catch (error) {
       console.error("Error saving self-care entry:", error);
@@ -269,9 +280,14 @@ export function useSelfCareEntry() {
             try {
               await useSelfCareStore.getState().deleteEntry(editId);
               setIsLoading(false);
-              Alert.alert("Success", "Self-care entry deleted successfully", [
-                { text: "OK", onPress: () => router.back() },
-              ]);
+              Toast.show({
+                type: "success",
+                text1: "Entry deleted",
+                text2: "Self-care entry removed",
+                position: "bottom",
+                visibilityTime: 2000,
+              });
+              router.back();
             } catch (error) {
               console.error("Error deleting self-care entry:", error);
               setIsLoading(false);
@@ -330,7 +346,8 @@ export function useSelfCareEntry() {
     }
 
     const now = new Date();
-    const today = format(now, "yyyy-MM-dd");
+    // Use provided date parameter or default to today
+    const entryDate = date || format(now, "yyyy-MM-dd");
 
     let mutationData;
 
@@ -354,7 +371,7 @@ export function useSelfCareEntry() {
 
       mutationData = {
         userId: "default-user",
-        entry_date: today,
+        entry_date: entryDate,
         use_individual_times: true,
         activity_times: convertedActivityTimes,
         cycle_day: null, // TODO: Calculate cycle day
@@ -376,7 +393,7 @@ export function useSelfCareEntry() {
 
       mutationData = {
         userId: "default-user",
-        entry_date: today,
+        entry_date: entryDate,
         time_descriptor: finalTimeDescriptor,
         exact_time: exactTime,
         activity_times: singleTimeActivityTimes,
