@@ -69,14 +69,26 @@ export function useDayData(date) {
     });
 
     selfCareData?.entries?.forEach((entry) => {
+      console.log("=== PROCESSING SELF-CARE ENTRY ===");
+      console.log("Entry ID:", entry.id);
+      console.log("Entry date:", entry.entry_date);
+      console.log("Entry activity_times:", entry.activity_times);
+      console.log("Entry time_descriptor:", entry.time_descriptor);
+
       if (entry.activity_times) {
         Object.entries(entry.activity_times).forEach(
           ([activityId, timeData]) => {
+            console.log(`Processing activity: ${activityId}, timeData:`, timeData);
+
             // Handle both old format (string) and new format (object with timeDescriptor)
             const timeDescriptor = typeof timeData === 'string' ? timeData : timeData.timeDescriptor;
+            console.log(`Resolved timeDescriptor: ${timeDescriptor}`);
+
             const timeSlot = TIME_SLOTS.find((slot) =>
               slot.timeDescriptors.includes(timeDescriptor),
             );
+            console.log(`Found timeSlot:`, timeSlot?.id);
+
             if (timeSlot && activityId) {
               // Get color directly from activity_key lookup
               const color = activityColors[activityId] || "#4ECDC4";
@@ -87,6 +99,7 @@ export function useDayData(date) {
                 timeDescriptor,
                 color,
               });
+              console.log(`Added to slot ${timeSlot.id}`);
             }
           },
         );

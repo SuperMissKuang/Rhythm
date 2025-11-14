@@ -81,16 +81,25 @@ export function useSelfCareEntry() {
   }, [selfCareActivities.length]);
 
   const saveSelfCareEntry = async (data) => {
+    console.log("=== SAVE SELF CARE ENTRY CALLED ===");
+    console.log("Data to save:", data);
+    console.log("Is edit mode:", isEditMode);
+    console.log("Edit ID:", editId);
+
     setIsLoading(true);
     try {
       if (isEditMode && editId) {
+        console.log("Calling updateEntry with ID:", editId);
         await useSelfCareStore.getState().updateEntry(editId, data);
+        console.log("Update complete");
         setIsLoading(false);
         Alert.alert("Success", "Self-care entry updated successfully", [
           { text: "OK", onPress: () => router.back() },
         ]);
       } else {
+        console.log("Calling createEntry");
         await useSelfCareStore.getState().createEntry(data);
+        console.log("Create complete");
         setIsLoading(false);
         Alert.alert("Success", "Self-care activity saved successfully", [
           { text: "OK", onPress: () => router.back() },
@@ -205,12 +214,17 @@ export function useSelfCareEntry() {
   };
 
   const handleSave = () => {
+    console.log("=== HANDLE SAVE CALLED ===");
+    console.log("Is edit mode:", isEditMode);
+    console.log("Edit ID:", editId);
     console.log("Selected activities before save:", selectedActivities);
 
     // Filter out any undefined/null values
     const validActivities = selectedActivities.filter(act => act != null);
+    console.log("Valid activities:", validActivities);
 
     if (validActivities.length === 0) {
+      console.log("No valid activities - showing alert");
       Alert.alert("Missing Information", "Please select at least one activity");
       return;
     }

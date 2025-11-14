@@ -10,23 +10,40 @@ const STORAGE_KEY = "@rhythm:selfcare-entries";
 const normalizeEntry = (entry) => {
   if (!entry) return null;
 
-  return {
-    ...entry,
-    // Normalize field names to snake_case
-    entry_date: entry.entry_date || entry.entryDate,
-    time_descriptor: entry.time_descriptor || entry.timeDescriptor,
-    activity_times: entry.activity_times || entry.activityTimes,
-    use_individual_times: entry.use_individual_times ?? entry.useIndividualTimes,
-    cycle_day: entry.cycle_day ?? entry.cycleDay,
-    exact_time: entry.exact_time || entry.exactTime,
-    // Remove camelCase versions if they exist
-    entryDate: undefined,
-    timeDescriptor: undefined,
-    activityTimes: undefined,
-    useIndividualTimes: undefined,
-    cycleDay: undefined,
-    exactTime: undefined,
-  };
+  const normalized = { ...entry };
+
+  // Normalize field names to snake_case - only set if the field exists
+  if ('entry_date' in entry || 'entryDate' in entry) {
+    normalized.entry_date = entry.entry_date || entry.entryDate;
+    delete normalized.entryDate;
+  }
+
+  if ('time_descriptor' in entry || 'timeDescriptor' in entry) {
+    normalized.time_descriptor = entry.time_descriptor || entry.timeDescriptor;
+    delete normalized.timeDescriptor;
+  }
+
+  if ('activity_times' in entry || 'activityTimes' in entry) {
+    normalized.activity_times = entry.activity_times || entry.activityTimes;
+    delete normalized.activityTimes;
+  }
+
+  if ('use_individual_times' in entry || 'useIndividualTimes' in entry) {
+    normalized.use_individual_times = entry.use_individual_times ?? entry.useIndividualTimes;
+    delete normalized.useIndividualTimes;
+  }
+
+  if ('cycle_day' in entry || 'cycleDay' in entry) {
+    normalized.cycle_day = entry.cycle_day ?? entry.cycleDay;
+    delete normalized.cycleDay;
+  }
+
+  if ('exact_time' in entry || 'exactTime' in entry) {
+    normalized.exact_time = entry.exact_time || entry.exactTime;
+    delete normalized.exactTime;
+  }
+
+  return normalized;
 };
 
 /**
@@ -139,11 +156,20 @@ export const useSelfCareStore = create((set, get) => ({
       // Normalize the updates
       const normalizedUpdates = normalizeEntry(updates);
 
-      const updatedEntries = get().entries.map((entry) =>
-        entry.id === id
-          ? normalizeEntry({ ...entry, ...normalizedUpdates, updatedAt: new Date().toISOString() })
-          : entry
-      );
+      console.log("=== UPDATE ENTRY DEBUG ===");
+      console.log("Entry ID:", id);
+      console.log("Original updates:", updates);
+      console.log("Normalized updates:", normalizedUpdates);
+
+      const updatedEntries = get().entries.map((entry) => {
+        if (entry.id === id) {
+          const merged = { ...entry, ...normalizedUpdates, updatedAt: new Date().toISOString() };
+          console.log("Entry before merge:", entry);
+          console.log("Entry after merge:", merged);
+          return normalizeEntry(merged);
+        }
+        return entry;
+      });
 
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries));
       set({ entries: updatedEntries });
