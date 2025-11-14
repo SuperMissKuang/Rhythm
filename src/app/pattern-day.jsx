@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { View, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { GestureDetector, Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
+import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import { ChevronLeft } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { parseISO, format, addDays, subDays, isSameDay } from "date-fns";
@@ -45,6 +45,9 @@ export default function PatternDayScreen() {
 
   // Swipe gesture handler
   const panGesture = Gesture.Pan()
+    .activeOffsetX([-20, 20]) // Require 20px horizontal movement before activation
+    .failOffsetY([-10, 10]) // Prevent activation during vertical scrolls
+    .runOnJS(true) // Run navigation on JS thread safely
     .onEnd((event) => {
       const swipeThreshold = 50;
 
@@ -59,40 +62,38 @@ export default function PatternDayScreen() {
     });
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
-        {/* Header with back button */}
-        <View
-          style={{
-            paddingTop: insets.top,
-            paddingHorizontal: 20,
-            paddingVertical: 16,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.borderLight,
-          }}
-        >
-          <TouchableOpacity onPress={() => router.back()} style={{ alignSelf: "flex-start" }}>
-            <ChevronLeft size={24} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Day view content with swipe gesture */}
-        <GestureDetector gesture={panGesture}>
-          <View style={{ flex: 1 }}>
-            <DayViewHeader
-              date={selectedDate}
-              cycleDay={cycleDay}
-              currentPhase={currentPhase}
-              totalDays={totalDays}
-              scaledPhases={scaledPhases}
-              onPreviousDay={handlePreviousDay}
-              onNextDay={handleNextDay}
-            />
-
-            <DayViewTimeline timeSlotData={timeSlotData} date={selectedDate} />
-          </View>
-        </GestureDetector>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Header with back button */}
+      <View
+        style={{
+          paddingTop: insets.top,
+          paddingHorizontal: 20,
+          paddingVertical: 16,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.borderLight,
+        }}
+      >
+        <TouchableOpacity onPress={() => router.back()} style={{ alignSelf: "flex-start" }}>
+          <ChevronLeft size={24} color={colors.primary} />
+        </TouchableOpacity>
       </View>
-    </GestureHandlerRootView>
+
+      {/* Day view content with swipe gesture */}
+      <GestureDetector gesture={panGesture}>
+        <View style={{ flex: 1 }}>
+          <DayViewHeader
+            date={selectedDate}
+            cycleDay={cycleDay}
+            currentPhase={currentPhase}
+            totalDays={totalDays}
+            scaledPhases={scaledPhases}
+            onPreviousDay={handlePreviousDay}
+            onNextDay={handleNextDay}
+          />
+
+          <DayViewTimeline timeSlotData={timeSlotData} date={selectedDate} />
+        </View>
+      </GestureDetector>
+    </View>
   );
 }
