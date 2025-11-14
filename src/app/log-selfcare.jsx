@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, Text } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -33,9 +33,11 @@ export default function LogSelfCareScreen() {
     toggleCategory,
     toggleActivity,
     handleSave,
+    handleDelete,
     isLoading,
     isEditMode,
     selfCareActivities,
+    hasChanges,
   } = useSelfCareEntry();
 
   const [fontsLoaded] = useFonts({
@@ -56,7 +58,7 @@ export default function LogSelfCareScreen() {
 
   // Get the color of the currently selected activity category
   const getActivityColor = () => {
-    if (selectedActivities.length === 0) return "#F8BBD9"; // Default pink if no activities
+    if (selectedActivities.length === 0) return colors.placeholder; // Neutral gray when no activities selected
 
     // Find the category of the first selected activity (all selected activities should be from same category)
     for (const category of selfCareActivities) {
@@ -85,6 +87,9 @@ export default function LogSelfCareScreen() {
 
   // Calculate if save button should be disabled
   const getSaveButtonDisabled = () => {
+    // In edit mode, disable if no changes have been made
+    if (isEditMode && !hasChanges()) return true;
+
     // No activities selected
     if (selectedActivities.length === 0) return true;
 
@@ -163,9 +168,8 @@ export default function LogSelfCareScreen() {
           />
         )}
 
-        {/* Single Time Selection - Show for single activity OR multiple activities with same time */}
-        {selectedActivities.length > 0 &&
-          (selectedActivities.length === 1 || useIndividualTimes === false) && (
+        {/* Single Time Selection - Show for single activity OR multiple activities with same time OR when no activities selected (to preserve time) */}
+        {(selectedActivities.length === 0 || selectedActivities.length === 1 || useIndividualTimes === false) && (
             <SingleTimeSelector
               colors={colors}
               timeDescriptor={timeDescriptor}
@@ -173,6 +177,7 @@ export default function LogSelfCareScreen() {
               selectedActivitiesCount={selectedActivities.length}
               selectedActivities={selectedActivities}
               selfCareActivities={selfCareActivities}
+              activityColor={getActivityColor()}
               onSetTimeDescriptor={setTimeDescriptor}
               onToggleTimeOptions={setShowTimeOptions}
             />
@@ -187,6 +192,33 @@ export default function LogSelfCareScreen() {
             onSetActivityTime={handleSetActivityTime}
             selfCareActivities={selfCareActivities}
           />
+        )}
+
+        {/* Delete Button - Only show in edit mode */}
+        {isEditMode && (
+          <TouchableOpacity
+            onPress={handleDelete}
+            disabled={isLoading}
+            style={{
+              backgroundColor: "#FFE6E6",
+              borderRadius: 12,
+              padding: 16,
+              marginTop: 32,
+              borderWidth: 1,
+              borderColor: "#FFCCCB",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 16,
+                fontFamily: "Montserrat_600SemiBold",
+                color: "#D32F2F",
+                textAlign: "center",
+              }}
+            >
+              Delete Entry
+            </Text>
+          </TouchableOpacity>
         )}
       </ScrollView>
     </View>

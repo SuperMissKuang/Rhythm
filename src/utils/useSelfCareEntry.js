@@ -16,6 +16,7 @@ export function useSelfCareEntry() {
   const [showTimeOptions, setShowTimeOptions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [initialState, setInitialState] = useState(null);
 
   // Get all activities from store (now includes defaults + custom)
   const allActivities = useActivityStore((state) => state.activities);
@@ -37,7 +38,7 @@ export function useSelfCareEntry() {
 
   // Load existing entry if editing
   useEffect(() => {
-    if (editId) {
+    if (editId && selfCareActivities.length > 0) {
       const entry = useSelfCareStore.getState().entries.find(e => e.id === editId);
       if (entry) {
         setIsEditMode(true);
@@ -48,8 +49,13 @@ export function useSelfCareEntry() {
           : (entry.activities || []);
         setSelectedActivities(activityKeys);
 
+        let loadedTimeDescriptor = null;
+        let loadedActivityTimes = {};
+        let loadedUseIndividualTimes = null;
+
         // Set timing approach
         if (entry.use_individual_times) {
+          loadedUseIndividualTimes = true;
           setUseIndividualTimes(true);
           // Convert activity_times object to proper format
           if (entry.activity_times) {
@@ -59,26 +65,64 @@ export function useSelfCareEntry() {
               times[activityKey] = timeData.timeDescriptor || timeData;
             });
             setActivityTimes(times);
+            loadedActivityTimes = times;
           }
         } else {
+          loadedUseIndividualTimes = false;
           setUseIndividualTimes(false);
+          loadedTimeDescriptor = entry.time_descriptor;
           setTimeDescriptor(entry.time_descriptor);
           if (entry.time_descriptor !== "Now") {
             setShowTimeOptions(true);
           }
         }
+
+        // In edit mode, only expand the category containing the selected activity
+        if (activityKeys.length > 0) {
+          const selectedActivityCategory = findActivityCategory(activityKeys[0]);
+          if (selectedActivityCategory) {
+            setExpandedCategories([selectedActivityCategory.id.toString()]);
+          }
+        }
+
+        // Store initial state for comparison
+        setInitialState({
+          selectedActivities: activityKeys,
+          timeDescriptor: loadedTimeDescriptor,
+          useIndividualTimes: loadedUseIndividualTimes,
+          activityTimes: loadedActivityTimes,
+        });
       }
     }
-  }, [editId]);
+  }, [editId, selfCareActivities.length]);
 
-  // Auto-expand categories when they're loaded
+  // Auto-expand categories when they're loaded (only in create mode)
   useEffect(() => {
-    if (selfCareActivities.length > 0 && expandedCategories.length === 0) {
+    if (!isEditMode && !editId && selfCareActivities.length > 0 && expandedCategories.length === 0) {
       setExpandedCategories(
         selfCareActivities.map((activity) => activity.id.toString()),
       );
     }
-  }, [selfCareActivities.length]);
+  }, [selfCareActivities.length, isEditMode, editId]);
+
+  // In create mode: collapse other categories when activity is selected, expand all when none selected
+  useEffect(() => {
+    // Only run in create mode (not edit mode)
+    if (!isEditMode && !editId && selfCareActivities.length > 0) {
+      if (selectedActivities.length === 0) {
+        // No activities selected - expand all categories
+        setExpandedCategories(
+          selfCareActivities.map((activity) => activity.id.toString()),
+        );
+      } else {
+        // Activity selected - only expand the category containing the selected activity
+        const selectedActivityCategory = findActivityCategory(selectedActivities[0]);
+        if (selectedActivityCategory) {
+          setExpandedCategories([selectedActivityCategory.id.toString()]);
+        }
+      }
+    }
+  }, [selectedActivities, isEditMode, editId, selfCareActivities.length]);
 
   const saveSelfCareEntry = async (data) => {
     console.log("=== SAVE SELF CARE ENTRY CALLED ===");
@@ -194,11 +238,7 @@ export function useSelfCareEntry() {
         setActivityTimes({});
       }
 
-      // If removing the last activity, also reset time descriptor
-      if (newSelectedActivities.length === 0) {
-        setTimeDescriptor(null);
-        setShowTimeOptions(false);
-      }
+      // DON'T reset time descriptor when deselecting - preserve the user's time selection
     }
   };
 
@@ -211,6 +251,36 @@ export function useSelfCareEntry() {
     if (currentHour >= 12 && currentHour < 17) return "Afternoon";
     if (currentHour >= 17 && currentHour < 21) return "Evening";
     return "Night";
+  };
+
+  const handleDelete = () => {
+    if (!isEditMode || !editId) return;
+
+    Alert.alert(
+      "Delete Entry",
+      "Are you sure you want to delete this self-care entry? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              await useSelfCareStore.getState().deleteEntry(editId);
+              setIsLoading(false);
+              Alert.alert("Success", "Self-care entry deleted successfully", [
+                { text: "OK", onPress: () => router.back() },
+              ]);
+            } catch (error) {
+              console.error("Error deleting self-care entry:", error);
+              setIsLoading(false);
+              Alert.alert("Error", "Failed to delete self-care entry. Please try again.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleSave = () => {
@@ -325,6 +395,32 @@ export function useSelfCareEntry() {
     saveSelfCareEntry(mutationData);
   };
 
+  // Check if any changes have been made in edit mode
+  const hasChanges = () => {
+    if (!isEditMode || !initialState) return true; // Allow save in create mode
+
+    // Compare timeDescriptor
+    if (timeDescriptor !== initialState.timeDescriptor) return true;
+
+    // Compare useIndividualTimes
+    if (useIndividualTimes !== initialState.useIndividualTimes) return true;
+
+    // Compare activityTimes (for individual times approach)
+    if (useIndividualTimes) {
+      const currentKeys = Object.keys(activityTimes).sort();
+      const initialKeys = Object.keys(initialState.activityTimes).sort();
+
+      if (currentKeys.length !== initialKeys.length) return true;
+      if (JSON.stringify(currentKeys) !== JSON.stringify(initialKeys)) return true;
+
+      for (const key of currentKeys) {
+        if (activityTimes[key] !== initialState.activityTimes[key]) return true;
+      }
+    }
+
+    return false;
+  };
+
   return {
     timeDescriptor,
     setTimeDescriptor,
@@ -339,8 +435,10 @@ export function useSelfCareEntry() {
     toggleCategory,
     toggleActivity,
     handleSave,
+    handleDelete,
     isLoading,
     isEditMode,
     selfCareActivities, // Export this for use in components
+    hasChanges, // Export change detection
   };
 }

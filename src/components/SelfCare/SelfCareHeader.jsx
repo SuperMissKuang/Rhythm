@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { ChevronLeft, Save } from "lucide-react-native";
+import { ChevronLeft, Save, X } from "lucide-react-native";
 import { router } from "expo-router";
 
 // Utility function to calculate color luminance for contrast
@@ -46,7 +46,11 @@ export function SelfCareHeader({
       }}
     >
       <TouchableOpacity onPress={() => router.back()}>
-        <ChevronLeft size={24} color={colors.primary} />
+        {isEditMode ? (
+          <X size={24} color={colors.primary} />
+        ) : (
+          <ChevronLeft size={24} color={colors.primary} />
+        )}
       </TouchableOpacity>
 
       <Text
@@ -56,7 +60,7 @@ export function SelfCareHeader({
           color: colors.primary,
         }}
       >
-        {isEditMode ? "Edit Self-Care Entry" : "Log Self-Care Activity"}
+        {isEditMode ? "Edit Entry" : "Log Self-Care Activity"}
       </Text>
 
       <TouchableOpacity

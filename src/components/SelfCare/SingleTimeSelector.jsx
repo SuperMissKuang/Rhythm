@@ -10,11 +10,12 @@ export function SingleTimeSelector({
   selectedActivitiesCount,
   selectedActivities = [], // Add selected activities
   selfCareActivities = [], // Add self-care activities to get colors
+  activityColor, // Accept activityColor as a prop
   onSetTimeDescriptor,
   onToggleTimeOptions,
 }) {
-  // Function to get the appropriate color for the selected activities
-  const getActivityColor = () => {
+  // Use the passed activityColor prop, or calculate as fallback
+  const finalActivityColor = activityColor || (() => {
     if (selectedActivities.length === 0) {
       return "#14B8A6"; // Default teal fallback
     }
@@ -68,9 +69,7 @@ export function SingleTimeSelector({
     }
 
     return "#14B8A6"; // Default teal fallback
-  };
-
-  const activityColor = getActivityColor();
+  })();
 
   return (
     <View style={{ marginBottom: 32 }}>
@@ -102,13 +101,13 @@ export function SingleTimeSelector({
           }}
           style={{
             backgroundColor:
-              timeDescriptor === "Now" ? `${activityColor}15` : colors.surface,
+              timeDescriptor === "Now" ? `${finalActivityColor}15` : colors.surface,
             borderRadius: 20,
             paddingVertical: 8,
             paddingHorizontal: 16,
             borderWidth: 1.5,
             borderColor:
-              timeDescriptor === "Now" ? activityColor : colors.borderLight,
+              timeDescriptor === "Now" ? finalActivityColor : colors.borderLight,
           }}
         >
           <Text
@@ -116,7 +115,9 @@ export function SingleTimeSelector({
               fontSize: 13,
               fontFamily: "Montserrat_600SemiBold",
               color:
-                timeDescriptor === "Now" ? activityColor : colors.secondary,
+                timeDescriptor === "Now"
+                  ? (selectedActivities.length > 0 ? finalActivityColor : colors.primary)
+                  : colors.primary,
             }}
           >
             Now
@@ -133,7 +134,7 @@ export function SingleTimeSelector({
           style={{
             backgroundColor:
               showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
-                ? `${activityColor}15`
+                ? `${finalActivityColor}15`
                 : colors.surface,
             borderRadius: 20,
             paddingVertical: 8,
@@ -141,7 +142,7 @@ export function SingleTimeSelector({
             borderWidth: 1.5,
             borderColor:
               showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
-                ? activityColor
+                ? finalActivityColor
                 : colors.borderLight,
             flexDirection: "row",
             alignItems: "center",
@@ -153,8 +154,8 @@ export function SingleTimeSelector({
               fontFamily: "Montserrat_600SemiBold",
               color:
                 showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
-                  ? activityColor
-                  : colors.secondary,
+                  ? (selectedActivities.length > 0 ? finalActivityColor : colors.primary)
+                  : colors.primary,
               marginRight: 4,
             }}
           >
@@ -165,8 +166,8 @@ export function SingleTimeSelector({
               size={14}
               color={
                 showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
-                  ? activityColor
-                  : colors.secondary
+                  ? (selectedActivities.length > 0 ? finalActivityColor : colors.primary)
+                  : colors.primary
               }
             />
           ) : (
@@ -174,8 +175,8 @@ export function SingleTimeSelector({
               size={14}
               color={
                 showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
-                  ? activityColor
-                  : colors.secondary
+                  ? (selectedActivities.length > 0 ? finalActivityColor : colors.primary)
+                  : colors.primary
               }
             />
           )}
@@ -214,7 +215,7 @@ export function SingleTimeSelector({
                 style={{
                   backgroundColor:
                     timeDescriptor === option.value
-                      ? `${activityColor}15` // Light activity color background
+                      ? `${finalActivityColor}15` // Light activity color background
                       : colors.background,
                   borderRadius: 20,
                   paddingHorizontal: 16,
@@ -222,7 +223,7 @@ export function SingleTimeSelector({
                   borderWidth: 1.5,
                   borderColor:
                     timeDescriptor === option.value
-                      ? activityColor // Activity color border when selected
+                      ? finalActivityColor // Activity color border when selected
                       : colors.borderLight,
                 }}
               >
@@ -232,7 +233,7 @@ export function SingleTimeSelector({
                     fontFamily: "Montserrat_500Medium",
                     color:
                       timeDescriptor === option.value
-                        ? activityColor // Activity color text when selected
+                        ? (selectedActivities.length > 0 ? finalActivityColor : colors.primary) // Activity color when selected and has activities, black otherwise
                         : colors.primary,
                   }}
                 >
