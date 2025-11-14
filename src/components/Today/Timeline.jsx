@@ -8,6 +8,7 @@ import { useAppTheme } from "@/utils/theme";
 import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
 import { useSelfCareStore } from "@/utils/stores/useSelfCareStore";
 import { Alert } from "react-native";
+import { router } from "expo-router";
 
 export function Timeline({ timeSlotData }) {
   const { colors } = useAppTheme();
@@ -44,8 +45,11 @@ export function Timeline({ timeSlotData }) {
   };
 
   const handleSelfCarePress = (entry) => {
-    setSelectedSelfCareEntry(entry);
-    setIsEditSelfCareModalVisible(true);
+    // Navigate directly to edit screen
+    router.push({
+      pathname: "/log-selfcare",
+      params: { editId: entry.id },
+    });
   };
 
   const handleCloseSelfCareModal = () => {
