@@ -9,6 +9,7 @@ import {
 } from "@expo-google-fonts/montserrat";
 import { useAppTheme } from "@/utils/theme";
 import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react-native";
+import { router } from "expo-router";
 import {
   format,
   eachDayOfInterval,
@@ -21,7 +22,6 @@ import {
   endOfWeek,
   parseISO,
 } from "date-fns";
-import { MonthDetailModal } from "@/components/Pattern/MonthDetailModal";
 import { useActivityStore } from "@/utils/stores/useActivityStore";
 import { useCycleStore } from "@/utils/stores/useCycleStore";
 import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
@@ -57,8 +57,6 @@ export default function PatternScreen() {
   const { colors, isDark } = useAppTheme();
 
   const [selectedFilter, setSelectedFilter] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState(null);
-  const [isMonthModalVisible, setIsMonthModalVisible] = useState(false);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [showMoreActivities, setShowMoreActivities] = useState(false);
 
@@ -103,13 +101,10 @@ export default function PatternScreen() {
     selectedFilter || (allActivities.length > 0 ? allActivities[0] : null);
 
   const handleMonthPress = (month) => {
-    setSelectedMonth(month);
-    setIsMonthModalVisible(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsMonthModalVisible(false);
-    setSelectedMonth(null);
+    router.push({
+      pathname: "/pattern-month",
+      params: { month: format(month, "yyyy-MM") },
+    });
   };
 
   const handleNextYear = () => {
@@ -688,17 +683,6 @@ export default function PatternScreen() {
           )}
         </View>
       </ScrollView>
-
-      {/* Month Detail Modal */}
-      <MonthDetailModal
-        visible={isMonthModalVisible}
-        onClose={handleCloseModal}
-        selectedMonth={selectedMonth}
-        activities={allActivities} // Pass allActivities instead of just activities
-        anxietyData={anxietyData}
-        selfCareData={selfCareData}
-        cyclesData={cyclesData}
-      />
     </View>
   );
 }

@@ -1,75 +1,29 @@
-import React, { useState } from "react";
-import { View, Text, Alert } from "react-native";
+import React from "react";
+import { View, Text } from "react-native";
 import { format } from "date-fns";
+import { router } from "expo-router";
 import { TIME_SLOTS } from "@/utils/constants";
 import { ActivityPill } from "@/components/Today/ActivityPill";
-import { EditAnxietyModal } from "@/components/Today/EditAnxietyModal";
-import { EditSelfCareModal } from "@/components/Today/EditSelfCareModal";
 import { useAppTheme } from "@/utils/theme";
-import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
-import { useSelfCareStore } from "@/utils/stores/useSelfCareStore";
 
 export function DayViewTimeline({ timeSlotData, date }) {
   const { colors } = useAppTheme();
   const isToday =
     format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
-  // State for anxiety entry editing/deleting
-  const [selectedAnxietyEntry, setSelectedAnxietyEntry] = useState(null);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  const [isDeletingEntry, setIsDeletingEntry] = useState(false);
-
-  // State for self-care entry editing/deleting
-  const [selectedSelfCareEntry, setSelectedSelfCareEntry] = useState(null);
-  const [isEditSelfCareModalVisible, setIsEditSelfCareModalVisible] = useState(false);
-  const [isDeletingSelfCareEntry, setIsDeletingSelfCareEntry] = useState(false);
-
+  // Navigate directly to edit pages
   const handleAnxietyPress = (entry) => {
-    setSelectedAnxietyEntry(entry);
-    setIsEditModalVisible(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsEditModalVisible(false);
-    setSelectedAnxietyEntry(null);
-  };
-
-  const handleDeleteAnxiety = async (entryId) => {
-    setIsDeletingEntry(true);
-    try {
-      await useAnxietyStore.getState().deleteEntry(entryId);
-      setIsDeletingEntry(false);
-      handleCloseModal();
-      Alert.alert("Success", "Anxiety entry deleted successfully");
-    } catch (error) {
-      console.error("Error deleting anxiety entry:", error);
-      setIsDeletingEntry(false);
-      Alert.alert("Error", "Failed to delete anxiety entry. Please try again.");
-    }
+    router.push({
+      pathname: "/log-anxiety",
+      params: { editId: entry.id },
+    });
   };
 
   const handleSelfCarePress = (entry) => {
-    setSelectedSelfCareEntry(entry);
-    setIsEditSelfCareModalVisible(true);
-  };
-
-  const handleCloseSelfCareModal = () => {
-    setIsEditSelfCareModalVisible(false);
-    setSelectedSelfCareEntry(null);
-  };
-
-  const handleDeleteSelfCare = async (entryId) => {
-    setIsDeletingSelfCareEntry(true);
-    try {
-      await useSelfCareStore.getState().deleteEntry(entryId);
-      setIsDeletingSelfCareEntry(false);
-      handleCloseSelfCareModal();
-      Alert.alert("Success", "Self-care entry deleted successfully");
-    } catch (error) {
-      console.error("Error deleting self-care entry:", error);
-      setIsDeletingSelfCareEntry(false);
-      Alert.alert("Error", "Failed to delete self-care entry. Please try again.");
-    }
+    router.push({
+      pathname: "/log-selfcare",
+      params: { editId: entry.id },
+    });
   };
 
   return (
@@ -174,22 +128,6 @@ export function DayViewTimeline({ timeSlotData, date }) {
           );
         })}
       </View>
-
-      <EditAnxietyModal
-        visible={isEditModalVisible}
-        onClose={handleCloseModal}
-        onDelete={handleDeleteAnxiety}
-        anxietyEntry={selectedAnxietyEntry}
-        isDeletingEntry={isDeletingEntry}
-      />
-
-      <EditSelfCareModal
-        visible={isEditSelfCareModalVisible}
-        onClose={handleCloseSelfCareModal}
-        onDelete={handleDeleteSelfCare}
-        selfCareEntry={selectedSelfCareEntry}
-        isDeletingEntry={isDeletingSelfCareEntry}
-      />
     </View>
   );
 }
