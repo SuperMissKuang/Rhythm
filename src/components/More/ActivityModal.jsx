@@ -953,6 +953,61 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
               </View>
             </View>
           </View>
+
+          {/* Delete Activity Button - Only show when editing */}
+          {activity && (
+            <View style={{ marginTop: 32, marginBottom: 16 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert(
+                    "Delete Activity",
+                    `Are you sure you want to delete "${activity.name}"? This cannot be undone.`,
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Delete",
+                        style: "destructive",
+                        onPress: async () => {
+                          try {
+                            await useActivityStore.getState().deleteActivity(activity.id);
+                            onClose();
+                            resetForm();
+                          } catch (error) {
+                            Alert.alert(
+                              "Error",
+                              error.message || "Failed to delete activity. Please try again.",
+                            );
+                          }
+                        },
+                      },
+                    ],
+                  );
+                }}
+                style={{
+                  backgroundColor: colors.surface,
+                  borderRadius: 12,
+                  paddingVertical: 16,
+                  paddingHorizontal: 20,
+                  alignItems: "center",
+                  borderWidth: 1,
+                  borderColor: "#E53E3E",
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Trash2 size={18} color="#E53E3E" />
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontFamily: "Montserrat_600SemiBold",
+                      color: "#E53E3E",
+                    }}
+                  >
+                    Delete Activity
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
         </ScrollView>
       </View>
     </Modal>

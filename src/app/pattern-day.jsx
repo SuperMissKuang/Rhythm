@@ -1,8 +1,6 @@
 import React, { useMemo } from "react";
-import { View, TouchableOpacity } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { View } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
-import { ChevronLeft } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { parseISO, format, addDays, subDays, isSameDay } from "date-fns";
 import { useAppTheme } from "@/utils/theme";
@@ -13,7 +11,6 @@ import { DayViewHeader } from "@/components/Pattern/DayViewHeader";
 import { DayViewTimeline } from "@/components/Pattern/DayViewTimeline";
 
 export default function PatternDayScreen() {
-  const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const params = useLocalSearchParams();
 
@@ -63,21 +60,6 @@ export default function PatternDayScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Header with back button */}
-      <View
-        style={{
-          paddingTop: insets.top,
-          paddingHorizontal: 20,
-          paddingVertical: 16,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.borderLight,
-        }}
-      >
-        <TouchableOpacity onPress={() => router.back()} style={{ alignSelf: "flex-start" }}>
-          <ChevronLeft size={24} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
-
       {/* Day view content with swipe gesture */}
       <GestureDetector gesture={panGesture}>
         <View style={{ flex: 1 }}>
@@ -89,6 +71,7 @@ export default function PatternDayScreen() {
             scaledPhases={scaledPhases}
             onPreviousDay={handlePreviousDay}
             onNextDay={handleNextDay}
+            isToday={isToday}
           />
 
           <DayViewTimeline timeSlotData={timeSlotData} date={selectedDate} />

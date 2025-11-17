@@ -12,6 +12,7 @@ export function CompactCycleWheel({
   hasData = true,
   currentPhase,
   onAddPeriod,
+  showCenterText = true,
 }) {
   const { colors } = useAppTheme();
   const strokeWidth = 20;
@@ -88,31 +89,18 @@ export function CompactCycleWheel({
             <Circle cx={indicatorX} cy={indicatorY} r={8} fill="#FFFFFF" />
           </>
         )}
-        {hasData && (
-          <>
-            <SvgText
-              x={size / 2 - 14}
-              y={size / 2 - 10}
-              fontSize="20"
-              fontWeight="600"
-              fill={colors.primary}
-              textAnchor="middle"
-              alignmentBaseline="middle"
-            >
-              Day
-            </SvgText>
-            <SvgText
-              x={size / 2 + 16}
-              y={size / 2 - 10}
-              fontSize="20"
-              fontWeight="600"
-              fill={colors.primary}
-              textAnchor="middle"
-              alignmentBaseline="middle"
-            >
-              {cycleDay}
-            </SvgText>
-          </>
+        {hasData && showCenterText && (
+          <SvgText
+            x={size / 2}
+            y={size / 2}
+            fontSize="20"
+            fontWeight="600"
+            fill={colors.primary}
+            textAnchor="middle"
+            alignmentBaseline="middle"
+          >
+            Day {cycleDay}
+          </SvgText>
         )}
       </Svg>
       {onAddPeriod && (

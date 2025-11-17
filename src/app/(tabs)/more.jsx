@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Pressable, Alert } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -8,7 +8,7 @@ import {
   Montserrat_600SemiBold,
 } from "@expo-google-fonts/montserrat";
 import { useAppTheme } from "@/utils/theme";
-import { Plus, Edit, Trash2, Palette, Download, Upload } from "lucide-react-native";
+import { Plus, Palette, Download, Upload } from "lucide-react-native";
 import Toast from "react-native-toast-message";
 import ActivityModal from "../../components/More/ActivityModal";
 import { useActivityStore } from "@/utils/stores/useActivityStore";
@@ -213,77 +213,45 @@ export default function MoreScreen() {
           {/* Activities List */}
           <View style={{ gap: 12 }}>
             {activities.map((activity) => (
-              <View
+              <Pressable
                 key={activity.id}
-                style={{
+                onPress={() => handleEditActivity(activity)}
+                style={({ pressed }) => ({
                   backgroundColor: colors.surface,
                   borderRadius: 16,
                   padding: 16,
                   borderWidth: 1,
                   borderColor: colors.borderLight,
-                }}
+                  opacity: pressed ? 0.6 : 1,
+                })}
               >
                 {/* Activity Header */}
                 <View
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
-                    justifyContent: "space-between",
                     marginBottom: 12,
                   }}
                 >
                   <View
                     style={{
-                      flexDirection: "row",
-                      alignItems: "center",
+                      width: 20,
+                      height: 20,
+                      backgroundColor: activity.color_hex,
+                      borderRadius: 10,
+                      marginRight: 12,
+                    }}
+                  />
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontFamily: "Montserrat_600SemiBold",
+                      color: colors.primary,
                       flex: 1,
                     }}
                   >
-                    <View
-                      style={{
-                        width: 20,
-                        height: 20,
-                        backgroundColor: activity.color_hex,
-                        borderRadius: 10,
-                        marginRight: 12,
-                      }}
-                    />
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        fontFamily: "Montserrat_600SemiBold",
-                        color: colors.primary,
-                        flex: 1,
-                      }}
-                    >
-                      {activity.name}
-                    </Text>
-                  </View>
-
-                  {/* Show edit and delete buttons for all activities */}
-                  <View style={{ flexDirection: "row", gap: 8 }}>
-                    <TouchableOpacity
-                      onPress={() => handleEditActivity(activity)}
-                      style={{
-                        padding: 8,
-                        borderRadius: 8,
-                        backgroundColor: colors.background,
-                      }}
-                    >
-                      <Edit size={16} color={colors.secondary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => handleDeleteActivity(activity)}
-                      style={{
-                        padding: 8,
-                        borderRadius: 8,
-                        backgroundColor: colors.background,
-                      }}
-                    >
-                      <Trash2 size={16} color="#E53E3E" />
-                    </TouchableOpacity>
-                  </View>
+                    {activity.name}
+                  </Text>
                 </View>
 
                 {/* Sub-activities */}
@@ -417,7 +385,7 @@ export default function MoreScreen() {
                     </View>
                   </View>
                 </View>
-              </View>
+              </Pressable>
             ))}
 
             {activities.length === 0 && (

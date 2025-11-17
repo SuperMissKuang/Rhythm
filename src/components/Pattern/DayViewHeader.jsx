@@ -1,8 +1,9 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { format, isSameDay } from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react-native";
+import { format } from "date-fns";
+import { X, ChevronLeft, ChevronRight } from "lucide-react-native";
+import { router } from "expo-router";
 import { useAppTheme } from "@/utils/theme";
 import { CompactCycleWheel } from "@/components/Today/CompactCycleWheel";
 
@@ -14,76 +15,99 @@ export function DayViewHeader({
   scaledPhases,
   onPreviousDay,
   onNextDay,
+  isToday,
 }) {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const formattedDate = format(date, "EEE, MMM d, yyyy");
-  const isToday = isSameDay(date, new Date());
 
   return (
-    <View
-      style={{
-        paddingTop: insets.top,
-        backgroundColor: colors.background,
-        paddingHorizontal: 20,
-        paddingBottom: 16,
-      }}
-    >
+    <View style={{ backgroundColor: colors.background }}>
+      {/* Header Row: [X] [<] Date [>] */}
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 20,
+          justifyContent: "space-between",
+          paddingTop: insets.top,
+          paddingHorizontal: 20,
+          paddingVertical: 16,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.borderLight,
         }}
       >
-        <TouchableOpacity
-          onPress={onPreviousDay}
-          style={{
-            padding: 8,
-            backgroundColor: colors.surface,
-            borderRadius: 6,
-            borderWidth: 1,
-            borderColor: colors.borderLight,
-          }}
-        >
-          <ChevronLeft size={20} color={colors.primary} />
+        {/* X button on left */}
+        <TouchableOpacity onPress={() => router.back()}>
+          <X size={24} color={colors.primary} />
         </TouchableOpacity>
 
-        <Text
+        {/* Center group: [<] Date [>] */}
+        <View
           style={{
-            fontSize: 20,
-            fontFamily: "Montserrat_600SemiBold",
-            color: colors.primary,
-            marginHorizontal: 20,
-            minWidth: 200,
-            textAlign: "center",
+            flexDirection: "row",
+            alignItems: "center",
+            flex: 1,
+            justifyContent: "center",
           }}
         >
-          {formattedDate}
-        </Text>
+          <TouchableOpacity
+            onPress={onPreviousDay}
+            style={{
+              padding: 8,
+              backgroundColor: colors.surface,
+              borderRadius: 6,
+              borderWidth: 1,
+              borderColor: colors.borderLight,
+            }}
+          >
+            <ChevronLeft size={20} color={colors.primary} />
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={onNextDay}
-          disabled={isToday}
-          style={{
-            padding: 8,
-            backgroundColor: colors.surface,
-            borderRadius: 6,
-            borderWidth: 1,
-            borderColor: colors.borderLight,
-            opacity: isToday ? 0.3 : 1,
-          }}
-        >
-          <ChevronRight size={20} color={colors.primary} />
-        </TouchableOpacity>
+          <Text
+            style={{
+              fontSize: 18,
+              fontFamily: "Montserrat_600SemiBold",
+              color: colors.primary,
+              marginHorizontal: 16,
+              textAlign: "center",
+            }}
+          >
+            {formattedDate}
+          </Text>
+
+          <TouchableOpacity
+            onPress={onNextDay}
+            disabled={isToday}
+            style={{
+              padding: 8,
+              backgroundColor: colors.surface,
+              borderRadius: 6,
+              borderWidth: 1,
+              borderColor: colors.borderLight,
+              opacity: isToday ? 0.3 : 1,
+            }}
+          >
+            <ChevronRight size={20} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Spacer on right to balance X button */}
+        <View style={{ width: 24 }} />
       </View>
 
-      <View style={{ alignItems: "center", marginBottom: 20 }}>
+      {/* Cycle Wheel Section */}
+      <View
+        style={{
+          alignItems: "center",
+          paddingVertical: 20,
+          paddingHorizontal: 20,
+        }}
+      >
         <CompactCycleWheel
           cycleDay={cycleDay}
           totalDays={totalDays}
           scaledPhases={scaledPhases}
+          size={145}
         />
         <Text
           style={{
