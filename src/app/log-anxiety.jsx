@@ -37,6 +37,15 @@ const TIME_OPTIONS = [
   { value: "Night", label: "Night (9 PM+)" },
 ];
 
+// Mapping from timeSlot IDs to time descriptors
+const TIME_SLOT_TO_DESCRIPTOR = {
+  "early_morning": "Early Morning",
+  "late_morning": "Late Morning",
+  "afternoon": "Afternoon",
+  "evening": "Evening",
+  "night": "Night",
+};
+
 const SEVERITY_LEVELS = [
   { value: 1, label: "1. Very Mild", description: "Barely noticeable" },
   { value: 2, label: "2. Mild", description: "Slightly uncomfortable" },
@@ -74,12 +83,18 @@ const getContrastTextColor = (backgroundColor) => {
 export default function LogAnxietyScreen() {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
-  const { editId, date, timeSlot } = useLocalSearchParams();
+  const { editId, date, timeSlot, source } = useLocalSearchParams();
+
+  // Detect if coming from Pattern screen (create with timeSlot OR edit from pattern)
+  const fromPattern = (!!timeSlot && !editId) || (editId && source === "pattern");
+
+  // Convert timeSlot ID to descriptor if provided
+  const initialTimeDescriptor = timeSlot ? TIME_SLOT_TO_DESCRIPTOR[timeSlot] : null;
 
   const [severity, setSeverity] = useState(null);
-  const [timeDescriptor, setTimeDescriptor] = useState(timeSlot || null);
+  const [timeDescriptor, setTimeDescriptor] = useState(initialTimeDescriptor);
   const [trigger, setTrigger] = useState("");
-  const [showTimeOptions, setShowTimeOptions] = useState(false);
+  const [showTimeOptions, setShowTimeOptions] = useState(!!timeSlot); // Auto-expand if timeSlot provided
   const [isLoading, setIsLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -136,6 +151,41 @@ export default function LogAnxietyScreen() {
       setIsLoading(false);
       Alert.alert("Error", "Failed to save anxiety entry. Please try again.");
     }
+  };
+
+  const handleDelete = () => {
+    if (!isEditMode || !editId) return;
+
+    Alert.alert(
+      "Delete Anxiety Entry",
+      "Are you sure you want to delete this anxiety entry? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              await useAnxietyStore.getState().deleteEntry(editId);
+              setIsLoading(false);
+              Toast.show({
+                type: "success",
+                text1: "Entry deleted",
+                text2: "Anxiety entry removed",
+                position: "bottom",
+                visibilityTime: 2000,
+              });
+              router.back();
+            } catch (error) {
+              console.error("Error deleting anxiety entry:", error);
+              setIsLoading(false);
+              Alert.alert("Error", "Failed to delete anxiety entry. Please try again.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (!fontsLoaded) {
@@ -369,115 +419,117 @@ export default function LogAnxietyScreen() {
               When did this happen?
             </Text>
 
-            {/* Now vs Other Time Pills */}
-            <View
-              style={{
-                flexDirection: "row",
-                gap: 8,
-                marginBottom: 16,
-                alignSelf: "flex-start",
-              }}
-            >
-              <TouchableOpacity
-                onPress={() => {
-                  setTimeDescriptor("Now");
-                  setShowTimeOptions(false);
-                }}
+            {/* Now vs Other Time Pills - Only show when NOT from Pattern screen */}
+            {!fromPattern && (
+              <View
                 style={{
-                  backgroundColor:
-                    timeDescriptor === "Now"
-                      ? `${ANXIETY_COLOR}15`
-                      : colors.surface,
-                  borderRadius: 20,
-                  paddingVertical: 8,
-                  paddingHorizontal: 16,
-                  borderWidth: 1.5,
-                  borderColor:
-                    timeDescriptor === "Now"
-                      ? ANXIETY_COLOR
-                      : colors.borderLight,
+                  flexDirection: "row",
+                  gap: 8,
+                  marginBottom: 16,
+                  alignSelf: "flex-start",
                 }}
               >
-                <Text
+                <TouchableOpacity
+                  onPress={() => {
+                    setTimeDescriptor("Now");
+                    setShowTimeOptions(false);
+                  }}
                   style={{
-                    fontSize: 13,
-                    fontFamily: "Montserrat_600SemiBold",
-                    color:
+                    backgroundColor:
+                      timeDescriptor === "Now"
+                        ? `${ANXIETY_COLOR}15`
+                        : colors.surface,
+                    borderRadius: 20,
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                    borderWidth: 1.5,
+                    borderColor:
                       timeDescriptor === "Now"
                         ? ANXIETY_COLOR
-                        : colors.secondary,
+                        : colors.borderLight,
                   }}
                 >
-                  Now
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontFamily: "Montserrat_600SemiBold",
+                      color:
+                        timeDescriptor === "Now"
+                          ? ANXIETY_COLOR
+                          : colors.secondary,
+                    }}
+                  >
+                    Now
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => {
-                  if (timeDescriptor === "Now" || timeDescriptor === null) {
-                    setTimeDescriptor(null); // Don't auto-select Early Morning
-                  }
-                  setShowTimeOptions(!showTimeOptions);
-                }}
-                style={{
-                  backgroundColor:
-                    showTimeOptions ||
-                    (timeDescriptor && timeDescriptor !== "Now")
-                      ? `${ANXIETY_COLOR}15`
-                      : colors.surface,
-                  borderRadius: 20,
-                  paddingVertical: 8,
-                  paddingHorizontal: 16,
-                  borderWidth: 1.5,
-                  borderColor:
-                    showTimeOptions ||
-                    (timeDescriptor && timeDescriptor !== "Now")
-                      ? ANXIETY_COLOR
-                      : colors.borderLight,
-                  flexDirection: "row",
-                  alignItems: "center",
-                }}
-              >
-                <Text
+                <TouchableOpacity
+                  onPress={() => {
+                    if (timeDescriptor === "Now" || timeDescriptor === null) {
+                      setTimeDescriptor(null); // Don't auto-select Early Morning
+                    }
+                    setShowTimeOptions(!showTimeOptions);
+                  }}
                   style={{
-                    fontSize: 13,
-                    fontFamily: "Montserrat_600SemiBold",
-                    color:
+                    backgroundColor:
+                      showTimeOptions ||
+                      (timeDescriptor && timeDescriptor !== "Now")
+                        ? `${ANXIETY_COLOR}15`
+                        : colors.surface,
+                    borderRadius: 20,
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                    borderWidth: 1.5,
+                    borderColor:
                       showTimeOptions ||
                       (timeDescriptor && timeDescriptor !== "Now")
                         ? ANXIETY_COLOR
-                        : colors.secondary,
-                    marginRight: 4,
+                        : colors.borderLight,
+                    flexDirection: "row",
+                    alignItems: "center",
                   }}
                 >
-                  Other time
-                </Text>
-                {showTimeOptions ? (
-                  <ChevronUp
-                    size={14}
-                    color={
-                      showTimeOptions ||
-                      (timeDescriptor && timeDescriptor !== "Now")
-                        ? ANXIETY_COLOR
-                        : colors.secondary
-                    }
-                  />
-                ) : (
-                  <ChevronDown
-                    size={14}
-                    color={
-                      showTimeOptions ||
-                      (timeDescriptor && timeDescriptor !== "Now")
-                        ? ANXIETY_COLOR
-                        : colors.secondary
-                    }
-                  />
-                )}
-              </TouchableOpacity>
-            </View>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontFamily: "Montserrat_600SemiBold",
+                      color:
+                        showTimeOptions ||
+                        (timeDescriptor && timeDescriptor !== "Now")
+                          ? ANXIETY_COLOR
+                          : colors.secondary,
+                      marginRight: 4,
+                    }}
+                  >
+                    Other time
+                  </Text>
+                  {showTimeOptions ? (
+                    <ChevronUp
+                      size={14}
+                      color={
+                        showTimeOptions ||
+                        (timeDescriptor && timeDescriptor !== "Now")
+                          ? ANXIETY_COLOR
+                          : colors.secondary
+                      }
+                    />
+                  ) : (
+                    <ChevronDown
+                      size={14}
+                      color={
+                        showTimeOptions ||
+                        (timeDescriptor && timeDescriptor !== "Now")
+                          ? ANXIETY_COLOR
+                          : colors.secondary
+                      }
+                    />
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
 
-            {/* Descriptive Time Options - Only show when "Other time" is selected */}
-            {showTimeOptions && (
+            {/* Descriptive Time Options - Show when from Pattern screen OR when "Other time" is selected */}
+            {(fromPattern || showTimeOptions) && (
               <View
                 style={{
                   backgroundColor: colors.surface,
@@ -575,6 +627,33 @@ export default function LogAnxietyScreen() {
               }}
             />
           </View>
+
+          {/* Delete Button - Only show in edit mode */}
+          {isEditMode && editId && (
+            <TouchableOpacity
+              onPress={handleDelete}
+              disabled={isLoading}
+              style={{
+                backgroundColor: "#FFE6E6",
+                borderRadius: 12,
+                padding: 16,
+                marginTop: 32,
+                borderWidth: 1,
+                borderColor: "#FFCCCB",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontFamily: "Montserrat_600SemiBold",
+                  color: "#D32F2F",
+                  textAlign: "center",
+                }}
+              >
+                Delete Entry
+              </Text>
+            </TouchableOpacity>
+          )}
       </ScrollView>
     </View>
   );

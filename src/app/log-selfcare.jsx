@@ -30,6 +30,7 @@ export default function LogSelfCareScreen() {
     setActivityTimes,
     showTimeOptions,
     setShowTimeOptions,
+    fromTimeline,
     toggleCategory,
     toggleActivity,
     handleSave,
@@ -178,6 +179,7 @@ export default function LogSelfCareScreen() {
               selectedActivities={selectedActivities}
               selfCareActivities={selfCareActivities}
               activityColor={getActivityColor()}
+              fromTimeline={fromTimeline}
               onSetTimeDescriptor={setTimeDescriptor}
               onToggleTimeOptions={setShowTimeOptions}
             />

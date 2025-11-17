@@ -11,6 +11,7 @@ export function SingleTimeSelector({
   selectedActivities = [], // Add selected activities
   selfCareActivities = [], // Add self-care activities to get colors
   activityColor, // Accept activityColor as a prop
+  fromTimeline = false, // Detect if coming from timeline
   onSetTimeDescriptor,
   onToggleTimeOptions,
 }) {
@@ -85,106 +86,108 @@ export function SingleTimeSelector({
         {selectedActivitiesCount === 1 ? "this activity" : "these activities"}?
       </Text>
 
-      {/* Now vs Other Time Pills */}
-      <View
-        style={{
-          flexDirection: "row",
-          gap: 8,
-          marginBottom: 16,
-          alignSelf: "flex-start",
-        }}
-      >
-        <TouchableOpacity
-          onPress={() => {
-            onSetTimeDescriptor("Now");
-            onToggleTimeOptions(false);
-          }}
+      {/* Now vs Other Time Pills - Only show when NOT from timeline */}
+      {!fromTimeline && (
+        <View
           style={{
-            backgroundColor:
-              timeDescriptor === "Now" ? `${finalActivityColor}15` : colors.surface,
-            borderRadius: 20,
-            paddingVertical: 8,
-            paddingHorizontal: 16,
-            borderWidth: 1.5,
-            borderColor:
-              timeDescriptor === "Now" ? finalActivityColor : colors.borderLight,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 13,
-              fontFamily: "Montserrat_600SemiBold",
-              color:
-                timeDescriptor === "Now"
-                  ? (selectedActivities.length > 0 ? finalActivityColor : colors.primary)
-                  : colors.primary,
-            }}
-          >
-            Now
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => {
-            if (timeDescriptor === "Now" || timeDescriptor === null) {
-              onSetTimeDescriptor(null); // Don't auto-select Early Morning
-            }
-            onToggleTimeOptions(!showTimeOptions);
-          }}
-          style={{
-            backgroundColor:
-              showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
-                ? `${finalActivityColor}15`
-                : colors.surface,
-            borderRadius: 20,
-            paddingVertical: 8,
-            paddingHorizontal: 16,
-            borderWidth: 1.5,
-            borderColor:
-              showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
-                ? finalActivityColor
-                : colors.borderLight,
             flexDirection: "row",
-            alignItems: "center",
+            gap: 8,
+            marginBottom: 16,
+            alignSelf: "flex-start",
           }}
         >
-          <Text
+          <TouchableOpacity
+            onPress={() => {
+              onSetTimeDescriptor("Now");
+              onToggleTimeOptions(false);
+            }}
             style={{
-              fontSize: 13,
-              fontFamily: "Montserrat_600SemiBold",
-              color:
-                showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
-                  ? (selectedActivities.length > 0 ? finalActivityColor : colors.primary)
-                  : colors.primary,
-              marginRight: 4,
+              backgroundColor:
+                timeDescriptor === "Now" ? `${finalActivityColor}15` : colors.surface,
+              borderRadius: 20,
+              paddingVertical: 8,
+              paddingHorizontal: 16,
+              borderWidth: 1.5,
+              borderColor:
+                timeDescriptor === "Now" ? finalActivityColor : colors.borderLight,
             }}
           >
-            Other time
-          </Text>
-          {showTimeOptions ? (
-            <ChevronUp
-              size={14}
-              color={
-                showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
-                  ? (selectedActivities.length > 0 ? finalActivityColor : colors.primary)
-                  : colors.primary
-              }
-            />
-          ) : (
-            <ChevronDown
-              size={14}
-              color={
-                showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
-                  ? (selectedActivities.length > 0 ? finalActivityColor : colors.primary)
-                  : colors.primary
-              }
-            />
-          )}
-        </TouchableOpacity>
-      </View>
+            <Text
+              style={{
+                fontSize: 13,
+                fontFamily: "Montserrat_600SemiBold",
+                color:
+                  timeDescriptor === "Now"
+                    ? (selectedActivities.length > 0 ? finalActivityColor : colors.primary)
+                    : colors.primary,
+              }}
+            >
+              Now
+            </Text>
+          </TouchableOpacity>
 
-      {/* Descriptive Time Options - Only show when "Other time" is selected */}
-      {showTimeOptions && (
+          <TouchableOpacity
+            onPress={() => {
+              if (timeDescriptor === "Now" || timeDescriptor === null) {
+                onSetTimeDescriptor(null); // Don't auto-select Early Morning
+              }
+              onToggleTimeOptions(!showTimeOptions);
+            }}
+            style={{
+              backgroundColor:
+                showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
+                  ? `${finalActivityColor}15`
+                  : colors.surface,
+              borderRadius: 20,
+              paddingVertical: 8,
+              paddingHorizontal: 16,
+              borderWidth: 1.5,
+              borderColor:
+                showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
+                  ? finalActivityColor
+                  : colors.borderLight,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                fontFamily: "Montserrat_600SemiBold",
+                color:
+                  showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
+                    ? (selectedActivities.length > 0 ? finalActivityColor : colors.primary)
+                    : colors.primary,
+                marginRight: 4,
+              }}
+            >
+              Other time
+            </Text>
+            {showTimeOptions ? (
+              <ChevronUp
+                size={14}
+                color={
+                  showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
+                    ? (selectedActivities.length > 0 ? finalActivityColor : colors.primary)
+                    : colors.primary
+                }
+              />
+            ) : (
+              <ChevronDown
+                size={14}
+                color={
+                  showTimeOptions || (timeDescriptor && timeDescriptor !== "Now")
+                    ? (selectedActivities.length > 0 ? finalActivityColor : colors.primary)
+                    : colors.primary
+                }
+              />
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Descriptive Time Options - Show when from timeline OR when "Other time" is selected */}
+      {(fromTimeline || showTimeOptions) && (
         <View
           style={{
             backgroundColor: colors.surface,

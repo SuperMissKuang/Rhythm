@@ -10,21 +10,35 @@ const STORAGE_KEY = "@rhythm:anxiety-entries";
 const normalizeEntry = (entry) => {
   if (!entry) return null;
 
-  return {
-    ...entry,
-    // Normalize field names to snake_case
-    entry_date: entry.entry_date || entry.entryDate,
-    time_descriptor: entry.time_descriptor || entry.timeDescriptor,
-    trigger_description: entry.trigger_description || entry.triggerDescription,
-    exact_time: entry.exact_time || entry.exactTime,
-    cycle_day: entry.cycle_day ?? entry.cycleDay,
-    // Remove camelCase versions if they exist
-    entryDate: undefined,
-    timeDescriptor: undefined,
-    triggerDescription: undefined,
-    exactTime: undefined,
-    cycleDay: undefined,
-  };
+  const normalized = { ...entry };
+
+  // Normalize field names to snake_case - only set if the field exists
+  if ('entry_date' in entry || 'entryDate' in entry) {
+    normalized.entry_date = entry.entry_date || entry.entryDate;
+    delete normalized.entryDate;
+  }
+
+  if ('time_descriptor' in entry || 'timeDescriptor' in entry) {
+    normalized.time_descriptor = entry.time_descriptor || entry.timeDescriptor;
+    delete normalized.timeDescriptor;
+  }
+
+  if ('trigger_description' in entry || 'triggerDescription' in entry) {
+    normalized.trigger_description = entry.trigger_description || entry.triggerDescription;
+    delete normalized.triggerDescription;
+  }
+
+  if ('exact_time' in entry || 'exactTime' in entry) {
+    normalized.exact_time = entry.exact_time || entry.exactTime;
+    delete normalized.exactTime;
+  }
+
+  if ('cycle_day' in entry || 'cycleDay' in entry) {
+    normalized.cycle_day = entry.cycle_day ?? entry.cycleDay;
+    delete normalized.cycleDay;
+  }
+
+  return normalized;
 };
 
 /**

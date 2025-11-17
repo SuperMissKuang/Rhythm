@@ -7,14 +7,30 @@ import { SELFCARE_CATEGORIES } from "@/utils/selfcareConstants";
 import { useSelfCareStore } from "./stores/useSelfCareStore";
 import { useActivityStore } from "./stores/useActivityStore";
 
+// Mapping from timeSlot IDs to time descriptors
+const TIME_SLOT_TO_DESCRIPTOR = {
+  "early_morning": "Early Morning",
+  "late_morning": "Late Morning",
+  "afternoon": "Afternoon",
+  "evening": "Evening",
+  "night": "Night",
+};
+
 export function useSelfCareEntry() {
-  const { editId, date, timeSlot } = useLocalSearchParams();
-  const [timeDescriptor, setTimeDescriptor] = useState(timeSlot || null);
+  const { editId, date, timeSlot, source } = useLocalSearchParams();
+
+  // Detect if coming from Pattern screen (create with timeSlot OR edit from pattern)
+  const fromTimeline = (!!timeSlot && !editId) || (editId && source === "pattern");
+
+  // Convert timeSlot ID to descriptor if provided
+  const initialTimeDescriptor = timeSlot ? TIME_SLOT_TO_DESCRIPTOR[timeSlot] : null;
+
+  const [timeDescriptor, setTimeDescriptor] = useState(initialTimeDescriptor);
   const [selectedActivities, setSelectedActivities] = useState([]);
   const [expandedCategories, setExpandedCategories] = useState([]);
   const [useIndividualTimes, setUseIndividualTimes] = useState(null);
   const [activityTimes, setActivityTimes] = useState({});
-  const [showTimeOptions, setShowTimeOptions] = useState(false);
+  const [showTimeOptions, setShowTimeOptions] = useState(!!timeSlot); // Auto-expand if timeSlot provided
   const [isLoading, setIsLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [initialState, setInitialState] = useState(null);
@@ -449,6 +465,7 @@ export function useSelfCareEntry() {
     setActivityTimes,
     showTimeOptions,
     setShowTimeOptions,
+    fromTimeline, // Export to detect if coming from timeline
     toggleCategory,
     toggleActivity,
     handleSave,

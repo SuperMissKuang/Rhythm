@@ -19,14 +19,14 @@ export function DayViewTimeline({ timeSlotData, date }) {
   const handleAnxietyPress = (entry) => {
     router.push({
       pathname: "/log-anxiety",
-      params: { editId: entry.id },
+      params: { editId: entry.id, source: "pattern" },
     });
   };
 
   const handleSelfCarePress = (entry) => {
     router.push({
       pathname: "/log-selfcare",
-      params: { editId: entry.id },
+      params: { editId: entry.id, source: "pattern" },
     });
   };
 
@@ -122,19 +122,7 @@ export function DayViewTimeline({ timeSlotData, date }) {
                 )}
               </View>
               <View style={{ flex: 1, paddingTop: 22 }}>
-                {!hasEntries ? (
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontFamily: "Montserrat_500Medium",
-                      color: colors.placeholder,
-                      fontStyle: "italic",
-                      marginBottom: 8,
-                    }}
-                  >
-                    No activities
-                  </Text>
-                ) : (
+                {hasEntries && (
                   <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 8 }}>
                     {slotEntries.anxiety.map((entry, idx) => (
                       <ActivityPill
@@ -188,55 +176,59 @@ export function DayViewTimeline({ timeSlotData, date }) {
                 {/* Expanded buttons */}
                 {isExpanded && (
                   <View style={{ gap: 8 }}>
-                    <TouchableOpacity
-                      onPress={() => handleLogAnxiety(timeSlot.id)}
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        paddingVertical: 8,
-                        paddingHorizontal: 12,
-                        backgroundColor: "#EDE6FF",
-                        borderRadius: 16,
-                        alignSelf: "flex-start",
-                      }}
-                    >
-                      <Plus size={16} color="#5F27CD" />
-                      <Text
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <TouchableOpacity
+                        onPress={() => handleLogAnxiety(timeSlot.id)}
                         style={{
-                          fontSize: 12,
-                          fontFamily: "Montserrat_600SemiBold",
-                          color: "#5F27CD",
-                          marginLeft: 4,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          paddingVertical: 6,
+                          paddingHorizontal: 12,
+                          backgroundColor: "#EDE6FF",
+                          borderRadius: 16,
+                          borderWidth: 1,
+                          borderColor: colors.borderLight,
                         }}
                       >
-                        Anxiety
-                      </Text>
-                    </TouchableOpacity>
+                        <Plus size={14} color="#5F27CD" />
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontFamily: "Montserrat_600SemiBold",
+                            color: "#5F27CD",
+                            marginLeft: 4,
+                          }}
+                        >
+                          Anxiety
+                        </Text>
+                      </TouchableOpacity>
 
-                    <TouchableOpacity
-                      onPress={() => handleLogSelfCare(timeSlot.id)}
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        paddingVertical: 8,
-                        paddingHorizontal: 12,
-                        backgroundColor: "#D4F4DD",
-                        borderRadius: 16,
-                        alignSelf: "flex-start",
-                      }}
-                    >
-                      <Plus size={16} color="#27AE60" />
-                      <Text
+                      <TouchableOpacity
+                        onPress={() => handleLogSelfCare(timeSlot.id)}
                         style={{
-                          fontSize: 12,
-                          fontFamily: "Montserrat_600SemiBold",
-                          color: "#27AE60",
-                          marginLeft: 4,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          paddingVertical: 6,
+                          paddingHorizontal: 12,
+                          backgroundColor: "#D4F4DD",
+                          borderRadius: 16,
+                          borderWidth: 1,
+                          borderColor: colors.borderLight,
                         }}
                       >
-                        Self-Care
-                      </Text>
-                    </TouchableOpacity>
+                        <Plus size={14} color="#27AE60" />
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontFamily: "Montserrat_600SemiBold",
+                            color: "#27AE60",
+                            marginLeft: 4,
+                          }}
+                        >
+                          Self-Care
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
 
                     <TouchableOpacity
                       onPress={() => setExpandedTimeSlot(null)}

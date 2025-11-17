@@ -2,10 +2,8 @@ import React, { useState } from "react";
 import { View, Text } from "react-native";
 import { TIME_SLOTS } from "@/utils/constants";
 import { ActivityPill } from "@/components/Today/ActivityPill";
-import { EditAnxietyModal } from "@/components/Today/EditAnxietyModal";
 import { EditSelfCareModal } from "@/components/Today/EditSelfCareModal";
 import { useAppTheme } from "@/utils/theme";
-import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
 import { useSelfCareStore } from "@/utils/stores/useSelfCareStore";
 import { Alert } from "react-native";
 import { router } from "expo-router";
@@ -13,49 +11,24 @@ import Toast from "react-native-toast-message";
 
 export function Timeline({ timeSlotData }) {
   const { colors } = useAppTheme();
-  const [selectedAnxietyEntry, setSelectedAnxietyEntry] = useState(null);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  const [isDeletingEntry, setIsDeletingEntry] = useState(false);
 
   const [selectedSelfCareEntry, setSelectedSelfCareEntry] = useState(null);
   const [isEditSelfCareModalVisible, setIsEditSelfCareModalVisible] = useState(false);
   const [isDeletingSelfCareEntry, setIsDeletingSelfCareEntry] = useState(false);
 
   const handleAnxietyPress = (entry) => {
-    setSelectedAnxietyEntry(entry);
-    setIsEditModalVisible(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsEditModalVisible(false);
-    setSelectedAnxietyEntry(null);
-  };
-
-  const handleDeleteAnxiety = async (entryId) => {
-    setIsDeletingEntry(true);
-    try {
-      await useAnxietyStore.getState().deleteEntry(entryId);
-      setIsDeletingEntry(false);
-      handleCloseModal();
-      Toast.show({
-        type: "success",
-        text1: "Entry deleted",
-        text2: "Anxiety entry removed",
-        position: "bottom",
-        visibilityTime: 2000,
-      });
-    } catch (error) {
-      console.error("Error deleting anxiety entry:", error);
-      setIsDeletingEntry(false);
-      Alert.alert("Error", "Failed to delete anxiety entry. Please try again.");
-    }
+    // Navigate directly to edit screen
+    router.push({
+      pathname: "/log-anxiety",
+      params: { editId: entry.id, source: "today" },
+    });
   };
 
   const handleSelfCarePress = (entry) => {
     // Navigate directly to edit screen
     router.push({
       pathname: "/log-selfcare",
-      params: { editId: entry.id },
+      params: { editId: entry.id, source: "today" },
     });
   };
 
@@ -186,14 +159,6 @@ export function Timeline({ timeSlotData }) {
           );
         })}
       </View>
-
-      <EditAnxietyModal
-        visible={isEditModalVisible}
-        onClose={handleCloseModal}
-        onDelete={handleDeleteAnxiety}
-        anxietyEntry={selectedAnxietyEntry}
-        isDeletingEntry={isDeletingEntry}
-      />
 
       <EditSelfCareModal
         visible={isEditSelfCareModalVisible}
