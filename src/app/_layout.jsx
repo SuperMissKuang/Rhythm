@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { useCycleStore } from "@/utils/stores/useCycleStore";
 import { useSelfCareStore } from "@/utils/stores/useSelfCareStore";
 import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
@@ -45,10 +46,12 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Stack screenOptions={{ headerShown: false }} initialRouteName="index">
-        <Stack.Screen name="index" />
-      </Stack>
-      <Toast />
+      <BottomSheetModalProvider>
+        <Stack screenOptions={{ headerShown: false }} initialRouteName="index">
+          <Stack.Screen name="index" />
+        </Stack>
+        <Toast />
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
 }

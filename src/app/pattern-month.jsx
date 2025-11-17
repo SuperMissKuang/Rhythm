@@ -81,8 +81,8 @@ export default function PatternMonthScreen() {
     setEnabledActivities(new Set(activities.map((a) => a.id)));
   }, []);
 
-  const handleDayPress = (day, hasData) => {
-    if (hasData) {
+  const handleDayPress = (day, isCurrentMonth) => {
+    if (isCurrentMonth) {
       router.push({
         pathname: "/pattern-day",
         params: { date: format(day, "yyyy-MM-dd") },
@@ -438,12 +438,12 @@ export default function PatternMonthScreen() {
                           position: "relative",
                         }}
                       >
-                        {/* Day background - clickable if has data */}
+                        {/* Day background - clickable if current month */}
                         <TouchableOpacity
                           onPress={() =>
-                            handleDayPress(day, hasData && isCurrentMonth)
+                            handleDayPress(day, isCurrentMonth)
                           }
-                          disabled={!hasData || !isCurrentMonth}
+                          disabled={!isCurrentMonth}
                           style={{
                             width: daySize,
                             height: daySize,

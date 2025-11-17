@@ -31,7 +31,7 @@ export function TodayHeader({
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          marginBottom: 20,
+          marginBottom: 8,
         }}
       >
         <Text
@@ -43,28 +43,6 @@ export function TodayHeader({
         >
           {formattedDate}
         </Text>
-
-        <TouchableOpacity
-          onPress={onAddPeriod}
-          style={{
-            backgroundColor: "#F8BBD9",
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            borderRadius: 20,
-            borderWidth: 1,
-            borderColor: colors.borderLight,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 14,
-              fontFamily: "Montserrat_600SemiBold",
-              color: colors.primary,
-            }}
-          >
-            + Period
-          </Text>
-        </TouchableOpacity>
       </View>
 
       <View style={{ alignItems: "center", marginBottom: 20 }}>
@@ -73,6 +51,8 @@ export function TodayHeader({
           totalDays={totalDays}
           scaledPhases={scaledPhases}
           hasData={hasData}
+          currentPhase={currentPhase}
+          onAddPeriod={onAddPeriod}
         />
         {hasData ? (
           <>
