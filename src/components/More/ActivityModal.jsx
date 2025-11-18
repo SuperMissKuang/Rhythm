@@ -132,7 +132,7 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
         items:
           activity.items?.map((item) => ({
             name: item.name,
-            activityKey: item.activity_key,
+            activity_key: item.activity_key,
           })) || [],
         lightMin: activity.light_saturation_min || 1,
         lightMax: activity.light_saturation_max || 2,
@@ -178,7 +178,7 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
     // Compare current values with original values
     const currentItems = items.map((item) => ({
       name: item.name,
-      activityKey: item.activityKey,
+      activity_key: item.activity_key,
     }));
 
     return (

@@ -21,21 +21,21 @@ function validateImportData(data) {
   // Validate cycles
   if (Array.isArray(data.cycles)) {
     validated.cycles = data.cycles.filter((cycle) => {
-      return cycle && (cycle.startDate || cycle.date);
+      return cycle && (cycle.start_date || cycle.date);
     });
   }
 
   // Validate self-care entries
   if (Array.isArray(data.selfCareEntries)) {
     validated.selfCareEntries = data.selfCareEntries.filter((entry) => {
-      return entry && entry.entryDate && Array.isArray(entry.activities);
+      return entry && entry.entry_date && Array.isArray(entry.activities);
     });
   }
 
   // Validate anxiety entries
   if (Array.isArray(data.anxietyEntries)) {
     validated.anxietyEntries = data.anxietyEntries.filter((entry) => {
-      return entry && entry.entryDate && entry.severity;
+      return entry && entry.entry_date && entry.severity;
     });
   }
 
@@ -108,10 +108,10 @@ async function importToStores(data, merge = true) {
       if (merge) {
         // Merge: add new cycles, avoiding duplicates by date
         const existingDates = new Set(
-          cycleStore.cycles.map((c) => c.startDate || c.date)
+          cycleStore.cycles.map((c) => c.start_date || c.date)
         );
         for (const cycle of data.cycles) {
-          const cycleDate = cycle.startDate || cycle.date;
+          const cycleDate = cycle.start_date || cycle.date;
           if (!existingDates.has(cycleDate)) {
             await cycleStore.createCycle(cycle);
             stats.cyclesImported++;
@@ -134,11 +134,11 @@ async function importToStores(data, merge = true) {
         // Merge: add new entries, avoiding duplicates by date+activities
         const existingKeys = new Set(
           selfCareStore.entries.map(
-            (e) => `${e.entryDate}-${JSON.stringify(e.activities)}`
+            (e) => `${e.entry_date}-${JSON.stringify(e.activities)}`
           )
         );
         for (const entry of data.selfCareEntries) {
-          const key = `${entry.entryDate}-${JSON.stringify(entry.activities)}`;
+          const key = `${entry.entry_date}-${JSON.stringify(entry.activities)}`;
           if (!existingKeys.has(key)) {
             await selfCareStore.createEntry(entry);
             stats.selfCareEntriesImported++;
@@ -161,11 +161,11 @@ async function importToStores(data, merge = true) {
         // Merge: add new entries
         const existingKeys = new Set(
           anxietyStore.entries.map(
-            (e) => `${e.entryDate}-${e.timeDescriptor}-${e.severity}`
+            (e) => `${e.entry_date}-${e.time_descriptor}-${e.severity}`
           )
         );
         for (const entry of data.anxietyEntries) {
-          const key = `${entry.entryDate}-${entry.timeDescriptor}-${entry.severity}`;
+          const key = `${entry.entry_date}-${entry.time_descriptor}-${entry.severity}`;
           if (!existingKeys.has(key)) {
             await anxietyStore.createEntry(entry);
             stats.anxietyEntriesImported++;
@@ -225,12 +225,12 @@ export async function importMenstrualCycles(cycles) {
 
     const cycleStore = useCycleStore.getState();
     const existingDates = new Set(
-      cycleStore.cycles.map((c) => c.startDate || c.date)
+      cycleStore.cycles.map((c) => c.start_date || c.date)
     );
 
     let imported = 0;
     for (const cycle of cycles) {
-      const cycleDate = cycle.startDate || cycle.date;
+      const cycleDate = cycle.start_date || cycle.date;
       if (cycleDate && !existingDates.has(cycleDate)) {
         await cycleStore.createCycle(cycle);
         imported++;

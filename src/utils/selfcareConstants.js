@@ -10,7 +10,7 @@ export const SELFCARE_CATEGORIES = [
   {
     id: 1,
     name: "Hair",
-    color_hex: "#FFB6C1",
+    color_hex: "#4ECDC4",
     light_saturation_min: 1,
     light_saturation_max: 2,
     medium_saturation_min: 3,
@@ -30,7 +30,7 @@ export const SELFCARE_CATEGORIES = [
   {
     id: 2,
     name: "Skin",
-    color_hex: "#87CEEB",
+    color_hex: "#FF1493",
     light_saturation_min: 1,
     light_saturation_max: 2,
     medium_saturation_min: 3,

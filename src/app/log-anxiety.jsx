@@ -231,17 +231,17 @@ export default function LogAnxietyScreen() {
 
     const entryData = {
       userId: "default-user",
-      entryDate: entryDate,
-      timeDescriptor: finalTimeDescriptor,
-      exactTime,
+      entry_date: entryDate,
+      time_descriptor: finalTimeDescriptor,
+      exact_time: exactTime,
       severity,
-      triggerDescription: trigger || null,
-      cycleDay: null, // TODO: Calculate cycle day
+      trigger_description: trigger || null,
+      cycle_day: null, // TODO: Calculate cycle day
     };
 
     // Don't include entry_date for updates, it should remain unchanged
     if (isEditMode) {
-      delete entryData.entryDate;
+      delete entryData.entry_date;
       delete entryData.userId;
     }
 
