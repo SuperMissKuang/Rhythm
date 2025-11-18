@@ -69,8 +69,7 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
 
   const [name, setName] = useState("");
   const [selectedColor, setSelectedColor] = useState(""); // Remove pre-selection
-  const [items, setItems] = useState([]);
-  const [newItemName, setNewItemName] = useState("");
+  const [items, setItems] = useState([]); // Array of sub-activity input fields
   const [isLoading, setIsLoading] = useState(false);
 
   // Get all activities to check which colors are occupied
@@ -126,14 +125,22 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
   // Load activity data when editing
   useEffect(() => {
     if (activity) {
+      const itemsForForm =
+        activity.items?.map((item, index) => ({
+          id: `${item.activity_key || index}`,
+          name: item.name,
+        })) || [];
+
+      const itemsForComparison =
+        activity.items?.map((item) => ({
+          name: item.name,
+          activity_key: item.activity_key,
+        })) || [];
+
       const initialValues = {
         name: activity.name || "",
         selectedColor: activity.color_hex || "",
-        items:
-          activity.items?.map((item) => ({
-            name: item.name,
-            activity_key: item.activity_key,
-          })) || [],
+        items: itemsForComparison,
         lightMin: activity.light_saturation_min || 1,
         lightMax: activity.light_saturation_max || 2,
         mediumMin: activity.medium_saturation_min || 2,
@@ -144,7 +151,7 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
       // Set form values
       setName(initialValues.name);
       setSelectedColor(initialValues.selectedColor);
-      setItems(initialValues.items);
+      setItems(itemsForForm);
       setLightMin(initialValues.lightMin);
       setLightMax(initialValues.lightMax);
       setMediumMin(initialValues.mediumMin);
@@ -163,7 +170,6 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
     setName("");
     setSelectedColor(""); // Remove pre-selection
     setItems([]);
-    setNewItemName("");
     setLightMin(1);
     setLightMax(2);
     setMediumMin(2);
@@ -171,21 +177,40 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
     setDarkMin(4);
   };
 
+  // Add a new blank input field
+  const addSubActivityField = () => {
+    setItems([...items, { id: Date.now().toString(), name: "" }]);
+  };
+
+  // Update a sub-activity field's text
+  const updateSubActivity = (id, text) => {
+    setItems(items.map((item) => (item.id === id ? { ...item, name: text } : item)));
+  };
+
+  // Delete a sub-activity field
+  const deleteSubActivity = (id) => {
+    setItems(items.filter((item) => item.id !== id));
+  };
+
   // Check if there are changes compared to original values (for editing mode)
   const hasChanges = () => {
     if (!originalValues) return false; // New activity, no changes to detect
 
     // Compare current values with original values
-    const currentItems = items.map((item) => ({
-      name: item.name,
-      activity_key: item.activity_key,
-    }));
+    const currentItems = items
+      .filter((item) => item.name.trim().length > 0)
+      .map((item) => ({
+        name: item.name.trim(),
+        activity_key: item.name
+          .toLowerCase()
+          .replace(/\s+/g, "_")
+          .replace(/[^a-z0-9_]/g, ""),
+      }));
 
     return (
       name !== originalValues.name ||
       selectedColor !== originalValues.selectedColor ||
       JSON.stringify(currentItems) !== JSON.stringify(originalValues.items) ||
-      newItemName.trim().length > 0 || // Check if there's a pending sub-activity
       lightMin !== originalValues.lightMin ||
       lightMax !== originalValues.lightMax ||
       mediumMin !== originalValues.mediumMin ||
@@ -231,10 +256,6 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
     return null;
   }
 
-  const removeItem = (index) => {
-    setItems(items.filter((_, i) => i !== index));
-  };
-
   const handleSave = () => {
     console.log("handleSave called with:", { name: name.trim(), selectedColor, activityId: activity?.id });
 
@@ -271,20 +292,20 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
       return;
     }
 
-    // Add pending sub-activity if user has typed one but not yet added it
-    let finalItems = [...items];
-    if (newItemName.trim()) {
-      const activity_key = newItemName
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_]/g, "");
-
-      finalItems.push({
-        id: activity_key,
-        name: newItemName.trim(),
-        activity_key,
+    // Filter out empty items and convert to proper format
+    let finalItems = items
+      .filter((item) => item.name.trim().length > 0)
+      .map((item) => {
+        const activity_key = item.name
+          .toLowerCase()
+          .replace(/\s+/g, "_")
+          .replace(/[^a-z0-9_]/g, "");
+        return {
+          id: activity_key,
+          name: item.name.trim(),
+          activity_key,
+        };
       });
-    }
 
     // If no items provided at all, create a default item using the activity name
     if (finalItems.length === 0) {
@@ -515,60 +536,94 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
               Sub-activities
             </Text>
 
-            {/* Existing Items */}
+            {/* All Input Fields */}
             <View style={{ gap: 8, marginBottom: 12 }}>
-              {items.map((item, index) => (
+              {items.map((item) => (
                 <View
-                  key={index}
+                  key={item.id}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
-                    backgroundColor: colors.surface,
-                    borderRadius: 12,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    borderWidth: 1,
-                    borderColor: colors.borderLight,
+                    gap: 8,
                   }}
                 >
-                  <Text
+                  <TextInput
+                    value={item.name}
+                    onChangeText={(text) => updateSubActivity(item.id, text)}
+                    placeholder="Add sub-activity..."
+                    placeholderTextColor={colors.placeholder}
                     style={{
                       flex: 1,
+                      backgroundColor: colors.surface,
+                      borderRadius: 12,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
                       fontSize: 14,
                       fontFamily: "Montserrat_500Medium",
                       color: colors.primary,
+                      borderWidth: 1,
+                      borderColor: colors.borderLight,
                     }}
-                  >
-                    {item.name}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => removeItem(index)}
-                    style={{ padding: 4 }}
-                  >
-                    <Trash2 size={16} color="#E53E3E" />
-                  </TouchableOpacity>
+                  />
+                  {item.name.trim().length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => deleteSubActivity(item.id)}
+                      style={{
+                        padding: 8,
+                        backgroundColor: colors.surface,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: colors.borderLight,
+                      }}
+                    >
+                      <Trash2 size={16} color="#E53E3E" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               ))}
             </View>
 
-            {/* Add New Item */}
-            <TextInput
-              value={newItemName}
-              onChangeText={setNewItemName}
-              placeholder="Add sub-activity..."
-              placeholderTextColor={colors.placeholder}
+            {/* Add Sub-activity Button */}
+            <TouchableOpacity
+              onPress={addSubActivityField}
+              disabled={items.length > 0 && items[items.length - 1].name.trim().length === 0}
               style={{
-                backgroundColor: colors.surface,
+                backgroundColor:
+                  items.length > 0 && items[items.length - 1].name.trim().length === 0
+                    ? colors.placeholder
+                    : colors.surface,
                 borderRadius: 12,
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                fontSize: 14,
-                fontFamily: "Montserrat_500Medium",
-                color: colors.primary,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
                 borderWidth: 1,
                 borderColor: colors.borderLight,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
               }}
-            />
+            >
+              <Plus
+                size={16}
+                color={
+                  items.length > 0 && items[items.length - 1].name.trim().length === 0
+                    ? "#FFFFFF"
+                    : colors.primary
+                }
+              />
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontFamily: "Montserrat_600SemiBold",
+                  color:
+                    items.length > 0 && items[items.length - 1].name.trim().length === 0
+                      ? "#FFFFFF"
+                      : colors.primary,
+                }}
+              >
+                Add Sub-activity
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Frequency Configuration */}

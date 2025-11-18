@@ -9,31 +9,31 @@ export function ActionButtons() {
       style={{
         flexDirection: "row",
         justifyContent: "center",
-        gap: 16,
-        marginBottom: 20,
+        gap: 12,
+        marginBottom: 16,
       }}
     >
       <TouchableOpacity
         onPress={() => router.push("/log-anxiety")}
         style={{
           backgroundColor: "#EDE6FF",
-          borderRadius: 25,
-          paddingHorizontal: 20,
-          paddingVertical: 12,
+          borderRadius: 20,
+          paddingHorizontal: 16,
+          paddingVertical: 8,
           flexDirection: "row",
           alignItems: "center",
           flex: 1,
           justifyContent: "center",
-          maxWidth: 150,
+          maxWidth: 140,
         }}
       >
-        <Plus size={16} color="#5F27CD" />
+        <Plus size={14} color="#5F27CD" />
         <Text
           style={{
-            fontSize: 14,
+            fontSize: 13,
             fontFamily: "Montserrat_600SemiBold",
             color: "#5F27CD",
-            marginLeft: 8,
+            marginLeft: 6,
           }}
         >
           Anxiety
@@ -43,23 +43,23 @@ export function ActionButtons() {
         onPress={() => router.push("/log-selfcare")}
         style={{
           backgroundColor: "#E6F7E6",
-          borderRadius: 25,
-          paddingHorizontal: 20,
-          paddingVertical: 12,
+          borderRadius: 20,
+          paddingHorizontal: 16,
+          paddingVertical: 8,
           flexDirection: "row",
           alignItems: "center",
           flex: 1,
           justifyContent: "center",
-          maxWidth: 150,
+          maxWidth: 140,
         }}
       >
-        <Plus size={16} color="#2E7D32" />
+        <Plus size={14} color="#2E7D32" />
         <Text
           style={{
-            fontSize: 14,
+            fontSize: 13,
             fontFamily: "Montserrat_600SemiBold",
             color: "#2E7D32",
-            marginLeft: 8,
+            marginLeft: 6,
           }}
         >
           Self-Care

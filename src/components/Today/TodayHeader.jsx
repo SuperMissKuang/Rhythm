@@ -53,6 +53,7 @@ export function TodayHeader({
           hasData={hasData}
           currentPhase={currentPhase}
           onAddPeriod={onAddPeriod}
+          size={145}
         />
         {hasData ? (
           <>

@@ -342,8 +342,9 @@ export default function MoreScreen() {
                           color: colors.primary,
                         }}
                       >
-                        Light: {activity.light_saturation_min}-
-                        {activity.light_saturation_max}
+                        Light: {activity.light_saturation_min === activity.light_saturation_max
+                          ? activity.light_saturation_min
+                          : `${activity.light_saturation_min}-${activity.light_saturation_max}`}
                       </Text>
                     </View>
                     <View
@@ -361,8 +362,9 @@ export default function MoreScreen() {
                           color: colors.primary,
                         }}
                       >
-                        Medium: {activity.medium_saturation_min}-
-                        {activity.medium_saturation_max}
+                        Medium: {activity.medium_saturation_min === activity.medium_saturation_max
+                          ? activity.medium_saturation_min
+                          : `${activity.medium_saturation_min}-${activity.medium_saturation_max}`}
                       </Text>
                     </View>
                     <View
