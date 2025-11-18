@@ -67,9 +67,10 @@ export function CompactCycleWheel({
   }, [onAddPeriod]);
 
   const dismissTooltip = async () => {
-    tooltipOpacity.value = withTiming(0, { duration: 300 }, () => {
+    tooltipOpacity.value = withTiming(0, { duration: 300 });
+    setTimeout(() => {
       setShowTooltip(false);
-    });
+    }, 300);
     try {
       await AsyncStorage.setItem(TOOLTIP_STORAGE_KEY, "true");
     } catch (error) {

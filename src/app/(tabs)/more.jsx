@@ -322,7 +322,7 @@ export default function MoreScreen() {
                       marginBottom: 6,
                     }}
                   >
-                    Frequency Ranges:
+                    {activity.name === "Anxiety" ? "Intensity Ranges:" : "Frequency Ranges:"}
                   </Text>
                   <View
                     style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}
@@ -342,7 +342,7 @@ export default function MoreScreen() {
                           color: colors.primary,
                         }}
                       >
-                        Light: {activity.light_saturation_min === activity.light_saturation_max
+                        {activity.name === "Anxiety" ? "Mild" : "Light"}: {activity.light_saturation_min === activity.light_saturation_max
                           ? activity.light_saturation_min
                           : `${activity.light_saturation_min}-${activity.light_saturation_max}`}
                       </Text>
@@ -362,7 +362,7 @@ export default function MoreScreen() {
                           color: colors.primary,
                         }}
                       >
-                        Medium: {activity.medium_saturation_min === activity.medium_saturation_max
+                        {activity.name === "Anxiety" ? "Moderate" : "Medium"}: {activity.medium_saturation_min === activity.medium_saturation_max
                           ? activity.medium_saturation_min
                           : `${activity.medium_saturation_min}-${activity.medium_saturation_max}`}
                       </Text>
@@ -382,7 +382,7 @@ export default function MoreScreen() {
                           color: "#FFFFFF",
                         }}
                       >
-                        Dark: {activity.dark_saturation_min}+
+                        {activity.name === "Anxiety" ? "Severe" : "Dark"}: {activity.dark_saturation_min}+
                       </Text>
                     </View>
                   </View>

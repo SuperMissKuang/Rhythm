@@ -354,21 +354,15 @@ export default function PatternScreen() {
       return [
         {
           color: `${baseColor}40`,
-          label:
-            lightMin === lightMax
-              ? `${lightMin} time`
-              : `${lightMin}-${lightMax} times`,
+          label: "Mild",
         },
         {
           color: `${baseColor}80`,
-          label:
-            mediumMin === mediumMax
-              ? `${mediumMin} times`
-              : `${mediumMin}-${mediumMax} times`,
+          label: "Moderate",
         },
         {
           color: baseColor,
-          label: `${darkMin}+ times`,
+          label: "Severe",
         },
       ];
     } else {

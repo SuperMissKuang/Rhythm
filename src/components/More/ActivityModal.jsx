@@ -636,7 +636,7 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
                 marginBottom: 8,
               }}
             >
-              Frequency Settings
+              {activity?.name === "Anxiety" ? "Intensity Settings" : "Frequency Settings"}
             </Text>
             <Text
               style={{
@@ -646,7 +646,9 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
                 marginBottom: 16,
               }}
             >
-              Configure how many activities trigger each color saturation
+              {activity?.name === "Anxiety"
+                ? "Configure intensity score ranges for each color saturation"
+                : "Configure how many activities trigger each color saturation"}
             </Text>
 
             {/* Light Saturation */}
@@ -683,7 +685,7 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
                     color: colors.primary,
                   }}
                 >
-                  Light Saturation
+                  {activity?.name === "Anxiety" ? "Mild Intensity" : "Light Saturation"}
                 </Text>
               </View>
 
@@ -818,7 +820,7 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
                     color: colors.primary,
                   }}
                 >
-                  Medium Saturation
+                  {activity?.name === "Anxiety" ? "Moderate Intensity" : "Medium Saturation"}
                 </Text>
               </View>
 
@@ -952,7 +954,7 @@ export default function ActivityModal({ visible, onClose, activity = null }) {
                     color: colors.primary,
                   }}
                 >
-                  Dark Saturation
+                  {activity?.name === "Anxiety" ? "Severe Intensity" : "Dark Saturation"}
                 </Text>
               </View>
 
