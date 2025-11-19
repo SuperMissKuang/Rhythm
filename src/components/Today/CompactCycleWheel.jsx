@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { View, Pressable, Text, StyleSheet } from "react-native";
 import Svg, { Circle, Text as SvgText, Line } from "react-native-svg";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { CYCLE_PHASES } from "@/utils/constants";
 import { useAppTheme } from "@/utils/theme";
-
-const TOOLTIP_STORAGE_KEY = "@cycle_wheel_tooltip_shown";
 
 export function CompactCycleWheel({
   cycleDay,
@@ -42,40 +39,29 @@ export function CompactCycleWheel({
   const innerX = size / 2 + innerRadius * Math.cos(angleRad);
   const innerY = size / 2 + innerRadius * Math.sin(angleRad);
 
-  // Check if tooltip should be shown on first launch
+  // Show tooltip when there's no period data
   useEffect(() => {
-    const checkTooltipStatus = async () => {
-      try {
-        const hasShown = await AsyncStorage.getItem(TOOLTIP_STORAGE_KEY);
-        if (!hasShown && onAddPeriod) {
-          setShowTooltip(true);
-          tooltipOpacity.value = withTiming(1, { duration: 300 });
+    if (!hasData && onAddPeriod) {
+      setShowTooltip(true);
+      tooltipOpacity.value = withTiming(1, { duration: 300 });
 
-          // Auto-dismiss after 3 seconds
-          const timer = setTimeout(() => {
-            dismissTooltip();
-          }, 3000);
+      // Auto-dismiss after 3 seconds
+      const timer = setTimeout(() => {
+        dismissTooltip();
+      }, 3000);
 
-          return () => clearTimeout(timer);
-        }
-      } catch (error) {
-        console.error("Error checking tooltip status:", error);
-      }
-    };
+      return () => clearTimeout(timer);
+    } else {
+      setShowTooltip(false);
+      tooltipOpacity.value = 0;
+    }
+  }, [hasData, onAddPeriod]);
 
-    checkTooltipStatus();
-  }, [onAddPeriod]);
-
-  const dismissTooltip = async () => {
+  const dismissTooltip = () => {
     tooltipOpacity.value = withTiming(0, { duration: 300 });
     setTimeout(() => {
       setShowTooltip(false);
     }, 300);
-    try {
-      await AsyncStorage.setItem(TOOLTIP_STORAGE_KEY, "true");
-    } catch (error) {
-      console.error("Error saving tooltip status:", error);
-    }
   };
 
   const handlePress = () => {
