@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhythm - SMS Opt-In Process Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #F472B6 0%, #EC4899 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            margin-bottom: 40px;
+            border-radius: 12px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            color: #F472B6;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #F472B6;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: #666;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        .intro {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+        }
+
+        .step {
+            background: white;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #F472B6;
+            color: white;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 1.2em;
+        }
+
+        .screenshot {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .screenshot img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: 1px solid #ddd;
+        }
+
+        .screenshot-caption {
+            margin-top: 10px;
+            font-style: italic;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .highlight {
+            background: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .highlight strong {
+            color: #92400E;
+        }
+
+        .message-box {
+            background: #F3F4F6;
+            border: 2px solid #D1D5DB;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .key-points {
+            background: #E6F7F0;
+            border-left: 4px solid #10B981;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .key-points ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .key-points li {
+            margin-bottom: 8px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            margin-top: 60px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            h2 {
+                font-size: 1.5em;
+            }
+
+            .container {
+                padding: 20px 15px;
+            }
+
+            header {
+                padding: 40px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Rhythm</h1>
+        <p style="font-size: 1.2em; margin-top: 10px;">SMS Opt-In & Consent Process Documentation</p>
+    </header>
+
+    <div class="container">
+        <div class="intro">
+            <h2>Overview</h2>
+            <p>
+                <strong>Rhythm</strong> is a menstrual cycle tracking application that allows users to notify
+                trusted contacts (partners, family members, friends) about cycle phase changes via SMS.
+                This feature helps users communicate their needs during different phases of their cycle.
+            </p>
+            <p>
+                This document details our SMS opt-in and consent process, which fully complies with TCPA
+                regulations and carrier requirements for A2P 10DLC messaging.
+            </p>
+        </div>
+
+        <div class="key-points">
+            <h3>✓ Key Compliance Features</h3>
+            <ul>
+                <li><strong>Explicit Consent:</strong> Recipients must reply "YES" to opt-in before receiving any notifications</li>
+                <li><strong>Clear Business Identity:</strong> All messages include "Rhythm" branding</li>
+                <li><strong>Transparent Purpose:</strong> Opt-in message clearly explains what notifications will contain</li>
+                <li><strong>Easy Opt-Out:</strong> Recipients can reply "STOP" at any time to unsubscribe</li>
+                <li><strong>Local Storage Only:</strong> No contact data shared with third parties</li>
+                <li><strong>User-Initiated:</strong> App users must confirm before each opt-in request is sent</li>
+            </ul>
+        </div>
+
+        <h2>Detailed Opt-In Process</h2>
+
+        <div class="step">
+            <h3><span class="step-number">1</span>User Selects Contact</h3>
+            <p>
+                The app user navigates to "Manage Contacts" and taps "Add Contact". Instead of manual entry,
+                they can tap "Choose from Contacts" to select from their device's native contact list.
+            </p>
+
+            <div class="screenshot">
+                <img src="screenshots/contact-picker.png" alt="Contact Picker" style="max-width: 300px;">
+                <div class="screenshot-caption">Native iOS contact picker integration</div>
+            </div>
+
+            <div class="highlight">
+                <strong>⚠️ Important:</strong> Contact selection happens within the user's own device.
+                The app does not upload or store any contact information until the user explicitly saves it.
+            </div>
+        </div>
+
+        <div class="step">
+            <h3><span class="step-number">2</span>Opt-In Confirmation Dialog</h3>
+            <p>
+                After selecting a contact, the app shows a confirmation dialog asking the user if they want
+                to send an opt-in request. This dialog:
+            </p>
+            <ul style="margin-left: 40px; margin-top: 10px;">
+                <li>Displays the contact's name and phone number</li>
+                <li>Shows a preview of the exact SMS message that will be sent</li>
+                <li>Clearly warns that notifications can only be sent after the recipient replies "YES"</li>
+                <li>Allows the user to cancel without sending anything</li>
+            </ul>
+
+            <div class="screenshot">
+                <img src="screenshots/contact-form.png" alt="Contact Form" style="max-width: 350px;">
+                <div class="screenshot-caption">Add Contact form with "Choose from Contacts" button</div>
+            </div>
+
+            <div class="screenshot">
+                <img src="screenshots/opt-in-dialog.png" alt="Opt-In Confirmation Dialog" style="max-width: 350px;">
+                <div class="screenshot-caption">Opt-in confirmation dialog with message preview</div>
+            </div>
+
+            <p style="margin-top: 20px;">
+                <strong>User must explicitly tap "Send Opt-In Request"</strong> for the SMS to be sent.
+                This prevents accidental opt-in requests.
+            </p>
+        </div>
+
+        <div class="step">
+            <h3><span class="step-number">3</span>SMS Opt-In Request Sent</h3>
+            <p>
+                When the user confirms, the following SMS is sent to the recipient:
+            </p>
+
+            <div class="message-box">
+Rhythm: You've been invited to receive cycle updates for support. Reply YES to opt-in. Reply STOP to decline. Msg & data rates may apply.
+            </div>
+
+            <div class="key-points">
+                <h4>Message Components:</h4>
+                <ul>
+                    <li><strong>"Rhythm"</strong> - Clear business name identification</li>
+                    <li><strong>"cycle updates for support"</strong> - Transparent purpose explanation</li>
+                    <li><strong>"Reply YES to opt-in"</strong> - Clear call-to-action for consent</li>
+                    <li><strong>"Reply STOP to decline"</strong> - Easy opt-out method</li>
+                    <li><strong>"Msg & data rates may apply"</strong> - Standard carrier disclaimer</li>
+                </ul>
+            </div>
+
+            <div class="screenshot">
+                <!-- SMS Mockup (Pending Twilio A2P Approval for actual testing) -->
+                <div style="max-width: 350px; margin: 0 auto; background: #000; border-radius: 40px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+                    <div style="background: #1C1C1E; border-radius: 30px; padding: 20px;">
+                        <!-- Status Bar -->
+                        <div style="color: #fff; font-size: 13px; text-align: center; margin-bottom: 10px;">2:48 PM</div>
+
+                        <!-- Messages Header -->
+                        <div style="background: #2C2C2E; border-radius: 15px; padding: 15px; margin-bottom: 15px;">
+                            <div style="color: #0A84FF; font-size: 12px; margin-bottom: 5px;">Messages</div>
+                            <div style="color: #fff; font-weight: 600; font-size: 16px;">+1 (234) 567-8900</div>
+                        </div>
+
+                        <!-- SMS Bubble -->
+                        <div style="background: #3A3A3C; border-radius: 18px; padding: 12px 15px; max-width: 85%; margin-bottom: 20px;">
+                            <p style="color: #fff; font-size: 14px; line-height: 1.4; margin: 0;">
+                                Rhythm: You've been invited to receive cycle updates for support. Reply YES to opt-in. Reply STOP to decline. Msg & data rates may apply.
+                            </p>
+                        </div>
+
+                        <!-- Reply Field -->
+                        <div style="background: #2C2C2E; border-radius: 20px; padding: 8px 15px; display: flex; align-items: center;">
+                            <span style="color: #8E8E93; font-size: 14px;">iMessage</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="screenshot-caption">SMS message mockup (Awaiting Twilio A2P approval for live testing)</div>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3><span class="step-number">4</span>Recipient Replies YES</h3>
+            <p>
+                The recipient must reply "YES" to the SMS to confirm they want to receive cycle notifications.
+                Only after this explicit consent will the app mark the contact as "Confirmed" and allow
+                notifications to be sent.
+            </p>
+
+            <div class="highlight">
+                <strong>Note:</strong> Recipients can reply "STOP" at any time to opt-out. The app will
+                respect this and stop sending notifications to that contact.
+            </div>
+        </div>
+
+        <div class="step">
+            <h3><span class="step-number">5</span>Contact Status Tracking</h3>
+            <p>
+                The app tracks the opt-in status of each contact:
+            </p>
+            <ul style="margin-left: 40px; margin-top: 10px;">
+                <li><strong>Pending</strong> - Opt-in request sent, awaiting recipient's response</li>
+                <li><strong>Confirmed</strong> - Recipient replied YES, can receive notifications</li>
+                <li><strong>Declined</strong> - Recipient replied STOP, will not receive notifications</li>
+            </ul>
+
+            <div class="screenshot">
+                <img src="screenshots/contact-list-status.png" alt="Contact List with Status Badges" style="max-width: 400px;">
+                <div class="screenshot-caption">Contact list showing "Pending" status badge with "Send Reminder" button</div>
+            </div>
+
+            <p style="margin-top: 20px;">
+                <strong>Only "Confirmed" contacts will receive cycle notifications.</strong> The app filters
+                out pending and declined contacts when sending notifications.
+            </p>
+        </div>
+
+        <h2>Data Privacy & Security</h2>
+
+        <div class="step">
+            <h3>🔒 Local-First Storage</h3>
+            <p>
+                All contact information is stored locally on the user's device using secure storage mechanisms:
+            </p>
+            <ul style="margin-left: 40px; margin-top: 10px;">
+                <li>Contact names and phone numbers are stored in device-local AsyncStorage</li>
+                <li>No contact data is uploaded to external servers or databases</li>
+                <li>No contact information is shared with third parties</li>
+                <li>Users have full control to delete contacts at any time</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>📱 User Control</h3>
+            <p>
+                The app user (cycle tracker) maintains full control over notifications:
+            </p>
+            <ul style="margin-left: 40px; margin-top: 10px;">
+                <li>Can enable/disable automatic notifications</li>
+                <li>Can choose to require confirmation before each send</li>
+                <li>Can manually trigger notifications at any time</li>
+                <li>Can edit or remove contacts</li>
+                <li>Can resend opt-in requests to pending/declined contacts</li>
+            </ul>
+        </div>
+
+        <h2>Message Examples</h2>
+
+        <div class="step">
+            <h3>Cycle Notification Messages</h3>
+            <p>
+                After a contact has confirmed opt-in, they will receive cycle phase notifications.
+                Example messages:
+            </p>
+
+            <div class="message-box">
+Rhythm: Hi, this is [User Name]. Just a heads up - I'm starting my period today. I might need some extra support. Thanks for understanding! ❤️
+            </div>
+
+            <div class="message-box" style="margin-top: 15px;">
+Rhythm: Hey, it's [User Name]. I'm entering my luteal phase and might be feeling a bit off over the next week. Thanks for your patience! 💕
+            </div>
+
+            <p style="margin-top: 20px;">
+                All messages include "Rhythm" branding and the user's name for clear identification.
+            </p>
+        </div>
+
+        <h2>Compliance Summary</h2>
+
+        <div class="step">
+            <div class="key-points">
+                <h3>✓ TCPA Compliance Checklist</h3>
+                <ul>
+                    <li>✅ <strong>Prior Express Written Consent:</strong> Recipients reply YES to opt-in</li>
+                    <li>✅ <strong>Clear Business Identity:</strong> "Rhythm" included in all messages</li>
+                    <li>✅ <strong>Purpose Disclosure:</strong> "cycle updates for support" clearly stated</li>
+                    <li>✅ <strong>Opt-Out Method:</strong> "Reply STOP" included in opt-in message</li>
+                    <li>✅ <strong>Standard Disclaimer:</strong> "Msg & data rates may apply"</li>
+                    <li>✅ <strong>No Third-Party Sharing:</strong> Contact data stays local on device</li>
+                    <li>✅ <strong>User-Initiated:</strong> App user must confirm each opt-in request</li>
+                    <li>✅ <strong>Status Tracking:</strong> System tracks and respects opt-in/opt-out status</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer>
+            <p><strong>Rhythm</strong> - Menstrual Cycle Tracking & Support</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">
+                This documentation is maintained for Twilio A2P 10DLC compliance verification.<br>
+                Last Updated: December 2024
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
