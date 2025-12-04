@@ -76,11 +76,40 @@ export default function ContactForm({ visible, onClose, onSave, contact = null }
       // Open contact picker
       const result = await Contacts.presentContactPickerAsync();
 
-      if (result && result.name && result.phoneNumbers && result.phoneNumbers.length > 0) {
-        // Use first phone number
+      console.log('Contact picker result:', JSON.stringify(result, null, 2));
+
+      if (!result) {
+        console.log('No contact selected');
+        return;
+      }
+
+      // Check if user cancelled
+      if (result.cancelled) {
+        console.log('Contact picker cancelled');
+        return;
+      }
+
+      // Extract name - could be in different formats
+      let contactName = '';
+      if (result.name) {
+        contactName = result.name;
+      } else if (result.firstName || result.lastName) {
+        contactName = [result.firstName, result.lastName].filter(Boolean).join(' ');
+      }
+
+      // Extract phone number
+      if (result.phoneNumbers && result.phoneNumbers.length > 0) {
         const selectedPhone = result.phoneNumbers[0].number;
-        setName(result.name);
+        console.log('Setting name:', contactName, 'phone:', selectedPhone);
+        setName(contactName);
         setPhone(selectedPhone);
+      } else {
+        console.log('No phone numbers found for contact');
+        Alert.alert(
+          'No Phone Number',
+          'This contact does not have a phone number.',
+          [{ text: 'OK' }]
+        );
       }
     } catch (error) {
       console.error('Error picking contact:', error);

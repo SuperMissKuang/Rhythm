@@ -55,7 +55,7 @@ export function TodayHeader({
           onAddPeriod={onAddPeriod}
           size={145}
         />
-        {hasData ? (
+        {hasData && (
           <>
             <Text
               style={{
@@ -79,18 +79,6 @@ export function TodayHeader({
               {currentPhase.description}
             </Text>
           </>
-        ) : (
-          <Text
-            style={{
-              fontSize: 16,
-              fontFamily: "Montserrat_500Medium",
-              color: colors.secondary,
-              marginTop: 16,
-              textAlign: "center",
-            }}
-          >
-            Log your most recent period.
-          </Text>
         )}
       </View>
     </View>

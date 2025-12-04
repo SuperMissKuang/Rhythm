@@ -9,7 +9,7 @@ export const CYCLE_PHASES = [
   },
   {
     name: "Follicular",
-    color: "transparent",
+    color: "#E4E4E4",
     description: "Fresh, calming growth",
     duration: 7,
   },
@@ -21,7 +21,7 @@ export const CYCLE_PHASES = [
   },
   {
     name: "Luteal",
-    color: "transparent",
+    color: "#E4E4E4",
     description: "Refined, peaceful winding down",
     duration: 12,
   },

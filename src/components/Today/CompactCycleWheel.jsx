@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { View, Pressable, Text, StyleSheet } from "react-native";
-import Svg, { Circle, Text as SvgText, Line } from "react-native-svg";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import React, { useEffect } from "react";
+import { View, Pressable, StyleSheet } from "react-native";
+import Svg, { Circle, Text as SvgText } from "react-native-svg";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, withRepeat, withSequence, Easing } from "react-native-reanimated";
 import { CYCLE_PHASES } from "@/utils/constants";
 import { useAppTheme } from "@/utils/theme";
 
@@ -16,10 +16,10 @@ export function CompactCycleWheel({
   showCenterText = true,
 }) {
   const { colors } = useAppTheme();
-  const [showTooltip, setShowTooltip] = useState(false);
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
-  const tooltipOpacity = useSharedValue(0);
+  const pulseScale = useSharedValue(1);
+  const pulseOpacity = useSharedValue(0.6);
 
   const strokeWidth = 20;
   const radius = (size - strokeWidth) / 2;
@@ -30,44 +30,32 @@ export function CompactCycleWheel({
   const indicatorX = size / 2 + radius * Math.cos(angleRad);
   const indicatorY = size / 2 + radius * Math.sin(angleRad);
 
-  const pointerRadius = radius * 0.85;
-  const pointerX = size / 2 + pointerRadius * Math.cos(angleRad);
-  const pointerY = size / 2 + pointerRadius * Math.sin(angleRad);
-
-  // Calculate inner starting point for the arm to avoid overlapping text
-  const innerRadius = radius * 0.55; // Start the arm further from center
-  const innerX = size / 2 + innerRadius * Math.cos(angleRad);
-  const innerY = size / 2 + innerRadius * Math.sin(angleRad);
-
-  // Show tooltip when there's no period data
+  // Subtle pulse animation when there's no period data
   useEffect(() => {
-    if (!hasData && onAddPeriod) {
-      setShowTooltip(true);
-      tooltipOpacity.value = withTiming(1, { duration: 300 });
-
-      // Auto-dismiss after 3 seconds
-      const timer = setTimeout(() => {
-        dismissTooltip();
-      }, 3000);
-
-      return () => clearTimeout(timer);
+    if (!hasData) {
+      pulseScale.value = withRepeat(
+        withSequence(
+          withTiming(1.02, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1, // Infinite repeat
+        false
+      );
+      pulseOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0.8, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0.5, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
     } else {
-      setShowTooltip(false);
-      tooltipOpacity.value = 0;
+      pulseScale.value = 1;
+      pulseOpacity.value = 0.6;
     }
-  }, [hasData, onAddPeriod]);
-
-  const dismissTooltip = () => {
-    tooltipOpacity.value = withTiming(0, { duration: 300 });
-    setTimeout(() => {
-      setShowTooltip(false);
-    }, 300);
-  };
+  }, [hasData]);
 
   const handlePress = () => {
-    if (showTooltip) {
-      dismissTooltip();
-    }
     if (onAddPeriod) {
       onAddPeriod();
     }
@@ -78,8 +66,9 @@ export function CompactCycleWheel({
     opacity: opacity.value,
   }));
 
-  const animatedTooltipStyle = useAnimatedStyle(() => ({
-    opacity: tooltipOpacity.value,
+  const animatedPulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value }],
+    opacity: pulseOpacity.value,
   }));
 
   const wheelContent = (
@@ -92,7 +81,10 @@ export function CompactCycleWheel({
         strokeWidth={strokeWidth}
         fill="transparent"
       />
+      {/* Render gray phases first (Follicular, Luteal) */}
       {scaledPhases.map((phase, index) => {
+        const isGrayPhase = phase.name === "Follicular" || phase.name === "Luteal";
+        if (!isGrayPhase) return null;
         let startDay = 1;
         for (let i = 0; i < index; i++) {
           startDay += scaledPhases[i].duration;
@@ -101,49 +93,109 @@ export function CompactCycleWheel({
         const phaseDuration = phase.duration;
         const phaseCircumference =
           (phaseDuration / totalDays) * circumference;
-        if (phase.color && phase.color !== "transparent") {
-          return (
-            <Circle
-              key={phase.name}
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              stroke={phase.color}
-              strokeWidth={strokeWidth}
-              fill="transparent"
-              strokeDasharray={`${phaseCircumference} ${circumference}`}
-              strokeLinecap="round"
-              transform={`rotate(${startAngle - 90} ${size / 2} ${size / 2})`}
-            />
-          );
+        return (
+          <Circle
+            key={phase.name}
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={phase.color}
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            strokeDasharray={`${phaseCircumference} ${circumference}`}
+            strokeLinecap="round"
+            transform={`rotate(${startAngle - 90} ${size / 2} ${size / 2})`}
+          />
+        );
+      })}
+      {/* Render colored phases on top (Menstrual, Ovulation) */}
+      {scaledPhases.map((phase, index) => {
+        const isColoredPhase = phase.name === "Menstrual" || phase.name === "Ovulation";
+        if (!isColoredPhase) return null;
+        let startDay = 1;
+        for (let i = 0; i < index; i++) {
+          startDay += scaledPhases[i].duration;
         }
-        return null;
+        const startAngle = ((startDay - 1) / totalDays) * 360;
+        const phaseDuration = phase.duration;
+        const phaseCircumference =
+          (phaseDuration / totalDays) * circumference;
+        return (
+          <Circle
+            key={phase.name}
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={phase.color}
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            strokeDasharray={`${phaseCircumference} ${circumference}`}
+            strokeLinecap="round"
+            transform={`rotate(${startAngle - 90} ${size / 2} ${size / 2})`}
+          />
+        );
       })}
       {hasData && (
-        <>
-          <Line
-            x1={innerX}
-            y1={innerY}
-            x2={pointerX}
-            y2={pointerY}
-            stroke="#F5F5F5"
-            strokeWidth={3}
-            strokeLinecap="round"
-          />
-          <Circle cx={indicatorX} cy={indicatorY} r={8} fill="#FFFFFF" />
-        </>
+        <Circle cx={indicatorX} cy={indicatorY} r={6} fill="#FFFFFF" />
       )}
-      {hasData && showCenterText && (
+      {hasData && showCenterText && (() => {
+        const daysUntilPeriod = totalDays - cycleDay + 1;
+        const showCountdown = currentPhase !== "Menstrual" && daysUntilPeriod <= 7;
+
+        if (showCountdown) {
+          return (
+            <>
+              <SvgText
+                x={size / 2}
+                y={size / 2 - 10}
+                fontSize="16"
+                fontWeight="600"
+                fill="#000000"
+                textAnchor="middle"
+                alignmentBaseline="middle"
+              >
+                Period in
+              </SvgText>
+              <SvgText
+                x={size / 2}
+                y={size / 2 + 12}
+                fontSize="16"
+                fontWeight="600"
+                fill="#000000"
+                textAnchor="middle"
+                alignmentBaseline="middle"
+              >
+                {`${daysUntilPeriod} ${daysUntilPeriod === 1 ? "day" : "days"}`}
+              </SvgText>
+            </>
+          );
+        }
+
+        return (
+          <SvgText
+            x={size / 2}
+            y={size / 2}
+            fontSize="20"
+            fontWeight="600"
+            fill={colors.primary}
+            textAnchor="middle"
+            alignmentBaseline="middle"
+          >
+            {`Day ${cycleDay}`}
+          </SvgText>
+        );
+      })()}
+      {!hasData && (
         <SvgText
           x={size / 2}
           y={size / 2}
-          fontSize="20"
-          fontWeight="600"
-          fill={colors.primary}
+          fontSize="13"
+          fontWeight="500"
+          fill={colors.secondary}
           textAnchor="middle"
           alignmentBaseline="middle"
         >
-          Day {cycleDay}
+          Tap to log period
         </SvgText>
       )}
     </Svg>
@@ -164,15 +216,13 @@ export function CompactCycleWheel({
           }}
           style={{ position: "relative" }}
         >
-          <Animated.View style={[styles.wheelContainer, animatedPressStyle]}>
-            {wheelContent}
-          </Animated.View>
-
-          {showTooltip && (
-            <Animated.View style={[styles.tooltip, animatedTooltipStyle]}>
-              <Text style={styles.tooltipText}>
-                Tap the wheel to log your period
-              </Text>
+          {!hasData ? (
+            <Animated.View style={[styles.wheelContainer, animatedPressStyle, animatedPulseStyle]}>
+              {wheelContent}
+            </Animated.View>
+          ) : (
+            <Animated.View style={[styles.wheelContainer, animatedPressStyle]}>
+              {wheelContent}
             </Animated.View>
           )}
         </Pressable>
@@ -185,21 +235,4 @@ export function CompactCycleWheel({
 
 const styles = StyleSheet.create({
   wheelContainer: {},
-  tooltip: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: [{ translateX: -80 }, { translateY: -20 }],
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    maxWidth: 160,
-  },
-  tooltipText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontFamily: "Montserrat_600SemiBold",
-    textAlign: "center",
-  },
 });
