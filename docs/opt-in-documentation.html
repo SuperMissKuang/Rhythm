@@ -187,10 +187,12 @@
                 trusted contacts (partners, family members, friends) about cycle phase changes via SMS.
                 This feature helps users communicate their needs during different phases of their cycle.
             </p>
-            <p>
-                This document details our SMS opt-in and consent process, which fully complies with TCPA
-                regulations and carrier requirements for A2P 10DLC messaging.
-            </p>
+        </div>
+
+        <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 30px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <a href="opt-in-documentation.html" style="color: #EC4899; text-decoration: none; margin: 0 15px; font-weight: 500;">SMS Opt-In Documentation</a>
+            <a href="terms-of-service.html" style="color: #EC4899; text-decoration: none; margin: 0 15px; font-weight: 500;">Terms of Service</a>
+            <a href="privacy-policy.html" style="color: #EC4899; text-decoration: none; margin: 0 15px; font-weight: 500;">Privacy Policy</a>
         </div>
 
         <div class="key-points">
@@ -261,16 +263,17 @@
             </p>
 
             <div class="message-box">
-Rhythm: You've been invited to receive cycle updates for support. Reply YES to opt-in. Reply STOP to decline. Msg & data rates may apply.
+[User Name] is inviting you to receive her cycle updates via Rhythm app. Reply YES to opt-in. Reply STOP to decline. Msg frequency varies (approx 1-2/month). Msg & data rates may apply.
             </div>
 
             <div class="key-points">
                 <h4>Message Components:</h4>
                 <ul>
-                    <li><strong>"Rhythm"</strong> - Clear business name identification</li>
-                    <li><strong>"cycle updates for support"</strong> - Transparent purpose explanation</li>
+                    <li><strong>"[User Name]"</strong> - Personalized sender identification</li>
+                    <li><strong>"Rhythm app"</strong> - Clear app/business identification</li>
                     <li><strong>"Reply YES to opt-in"</strong> - Clear call-to-action for consent</li>
                     <li><strong>"Reply STOP to decline"</strong> - Easy opt-out method</li>
+                    <li><strong>"Msg frequency varies (approx 1-2/month)"</strong> - Message frequency disclosure</li>
                     <li><strong>"Msg & data rates may apply"</strong> - Standard carrier disclaimer</li>
                 </ul>
             </div>
@@ -291,7 +294,7 @@ Rhythm: You've been invited to receive cycle updates for support. Reply YES to o
                         <!-- SMS Bubble -->
                         <div style="background: #3A3A3C; border-radius: 18px; padding: 12px 15px; max-width: 85%; margin-bottom: 20px;">
                             <p style="color: #fff; font-size: 14px; line-height: 1.4; margin: 0;">
-                                Rhythm: You've been invited to receive cycle updates for support. Reply YES to opt-in. Reply STOP to decline. Msg & data rates may apply.
+                                Sarah is inviting you to receive her cycle updates via Rhythm app. Reply YES to opt-in. Reply STOP to decline. Msg frequency varies (approx 1-2/month). Msg & data rates may apply.
                             </p>
                         </div>
 
@@ -341,35 +344,6 @@ Rhythm: You've been invited to receive cycle updates for support. Reply YES to o
             </p>
         </div>
 
-        <h2>Data Privacy & Security</h2>
-
-        <div class="step">
-            <h3>🔒 Local-First Storage</h3>
-            <p>
-                All contact information is stored locally on the user's device using secure storage mechanisms:
-            </p>
-            <ul style="margin-left: 40px; margin-top: 10px;">
-                <li>Contact names and phone numbers are stored in device-local AsyncStorage</li>
-                <li>No contact data is uploaded to external servers or databases</li>
-                <li>No contact information is shared with third parties</li>
-                <li>Users have full control to delete contacts at any time</li>
-            </ul>
-        </div>
-
-        <div class="step">
-            <h3>📱 User Control</h3>
-            <p>
-                The app user (cycle tracker) maintains full control over notifications:
-            </p>
-            <ul style="margin-left: 40px; margin-top: 10px;">
-                <li>Can enable/disable automatic notifications</li>
-                <li>Can choose to require confirmation before each send</li>
-                <li>Can manually trigger notifications at any time</li>
-                <li>Can edit or remove contacts</li>
-                <li>Can resend opt-in requests to pending/declined contacts</li>
-            </ul>
-        </div>
-
         <h2>Message Examples</h2>
 
         <div class="step">
@@ -380,15 +354,15 @@ Rhythm: You've been invited to receive cycle updates for support. Reply YES to o
             </p>
 
             <div class="message-box">
-Rhythm: Hi, this is [User Name]. Just a heads up - I'm starting my period today. I might need some extra support. Thanks for understanding! ❤️
+Reminder from Rhythm: Sarah's period started today. Reply STOP to unsubscribe.
             </div>
 
             <div class="message-box" style="margin-top: 15px;">
-Rhythm: Hey, it's [User Name]. I'm entering my luteal phase and might be feeling a bit off over the next week. Thanks for your patience! 💕
+Reminder from Rhythm: Sarah is in her luteal phase and may experience mood changes. Reply STOP to unsubscribe.
             </div>
 
             <p style="margin-top: 20px;">
-                All messages include "Rhythm" branding and the user's name for clear identification.
+                All messages include "Rhythm" branding, the user's name, and opt-out instructions.
             </p>
         </div>
 
@@ -401,18 +375,38 @@ Rhythm: Hey, it's [User Name]. I'm entering my luteal phase and might be feeling
                     <li>✅ <strong>Prior Express Written Consent:</strong> Recipients reply YES to opt-in</li>
                     <li>✅ <strong>Clear Business Identity:</strong> "Rhythm" included in all messages</li>
                     <li>✅ <strong>Purpose Disclosure:</strong> "cycle updates for support" clearly stated</li>
-                    <li>✅ <strong>Opt-Out Method:</strong> "Reply STOP" included in opt-in message</li>
+                    <li>✅ <strong>Message Frequency:</strong> "approx 1-2/month" disclosed in opt-in</li>
+                    <li>✅ <strong>Opt-Out Method:</strong> "Reply STOP" included in all messages</li>
                     <li>✅ <strong>Standard Disclaimer:</strong> "Msg & data rates may apply"</li>
-                    <li>✅ <strong>No Third-Party Sharing:</strong> Contact data stays local on device</li>
-                    <li>✅ <strong>User-Initiated:</strong> App user must confirm each opt-in request</li>
-                    <li>✅ <strong>Status Tracking:</strong> System tracks and respects opt-in/opt-out status</li>
+                    <li>✅ <strong>Privacy Policy:</strong> <a href="privacy-policy.html" style="color: #10B981;">Available here</a></li>
+                    <li>✅ <strong>Terms of Service:</strong> <a href="terms-of-service.html" style="color: #10B981;">Available here</a></li>
                 </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="key-points">
+                <h3>✓ Content Compliance</h3>
+                <p style="margin-bottom: 10px;">Rhythm messages contain <strong>only</strong> menstrual health notifications. Our messages do NOT contain:</p>
+                <ul>
+                    <li>❌ No sexual content</li>
+                    <li>❌ No hate speech</li>
+                    <li>❌ No references to alcohol, firearms, tobacco, or marijuana</li>
+                    <li>❌ No promotional or marketing content</li>
+                    <li>❌ No third-party advertising</li>
+                </ul>
+                <p style="margin-top: 10px;">All messages are pre-defined templates focused solely on cycle phase updates for personal support.</p>
             </div>
         </div>
 
         <footer>
             <p><strong>Rhythm</strong> - Menstrual Cycle Tracking & Support</p>
             <p style="margin-top: 10px; font-size: 0.9em;">
+                <a href="opt-in-documentation.html" style="color: #EC4899;">SMS Opt-In Documentation</a> |
+                <a href="terms-of-service.html" style="color: #EC4899;">Terms of Service</a> |
+                <a href="privacy-policy.html" style="color: #EC4899;">Privacy Policy</a>
+            </p>
+            <p style="margin-top: 15px; font-size: 0.85em; color: #999;">
                 This documentation is maintained for Twilio A2P 10DLC compliance verification.<br>
                 Last Updated: December 2024
             </p>
