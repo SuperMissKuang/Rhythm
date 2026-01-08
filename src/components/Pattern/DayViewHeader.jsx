@@ -16,6 +16,11 @@ export function DayViewHeader({
   onPreviousDay,
   onNextDay,
   isToday,
+  isExtended = false,
+  statusMessage = null,
+  isHardLimitViolation = false,
+  isBeforeFirstCycle = false,
+  onAddPeriod,
 }) {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
@@ -108,28 +113,37 @@ export function DayViewHeader({
           totalDays={totalDays}
           scaledPhases={scaledPhases}
           size={145}
+          isExtended={isExtended}
+          statusMessage={statusMessage}
+          isHardLimitViolation={isHardLimitViolation}
+          isBeforeFirstCycle={isBeforeFirstCycle}
+          onAddPeriod={onAddPeriod}
         />
-        <Text
-          style={{
-            fontSize: 18,
-            fontFamily: "Montserrat_600SemiBold",
-            color: colors.primary,
-            marginTop: 16,
-            marginBottom: 4,
-          }}
-        >
-          {currentPhase.name} Phase
-        </Text>
-        <Text
-          style={{
-            fontSize: 14,
-            fontFamily: "Montserrat_500Medium",
-            color: colors.secondary,
-            textAlign: "center",
-          }}
-        >
-          {currentPhase.description}
-        </Text>
+        {currentPhase && !isBeforeFirstCycle && (
+          <>
+            <Text
+              style={{
+                fontSize: 18,
+                fontFamily: "Montserrat_600SemiBold",
+                color: colors.primary,
+                marginTop: 16,
+                marginBottom: 4,
+              }}
+            >
+              {currentPhase.name} Phase
+            </Text>
+            <Text
+              style={{
+                fontSize: 14,
+                fontFamily: "Montserrat_500Medium",
+                color: colors.secondary,
+                textAlign: "center",
+              }}
+            >
+              {currentPhase.description}
+            </Text>
+          </>
+        )}
       </View>
     </View>
   );

@@ -26,6 +26,11 @@ export function CompactCycleWheel({
   currentPhase,
   onAddPeriod,
   showCenterText = true,
+  isExtended = false,
+  statusMessage = null,
+  isHardLimitViolation = false,
+  warningMessage = null, // "Period in X days" message from getPeriodWarningStatus
+  isBeforeFirstCycle = false, // Date is before first logged cycle
 }) {
   const { colors } = useAppTheme();
   const scale = useSharedValue(1);
@@ -41,7 +46,9 @@ export function CompactCycleWheel({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  const currentDayAngle = ((cycleDay - 1) / totalDays) * 360 - 90;
+  // Ensure cycleDay is valid for angle calculation
+  const validCycleDay = cycleDay && cycleDay > 0 ? Math.min(cycleDay, totalDays) : 1;
+  const currentDayAngle = ((validCycleDay - 1) / totalDays) * 360 - 90;
   const angleRad = (currentDayAngle * Math.PI) / 180;
   const indicatorX = size / 2 + radius * Math.cos(angleRad);
   const indicatorY = size / 2 + radius * Math.sin(angleRad);
@@ -273,38 +280,76 @@ export function CompactCycleWheel({
       })}
       <Circle cx={indicatorX} cy={indicatorY} r={6} fill="#FFFFFF" />
       {showCenterText && (() => {
-        const daysUntilPeriod = totalDays - cycleDay + 1;
-        const showCountdown = currentPhase !== "Menstrual" && daysUntilPeriod <= 7;
+        // Ensure cycleDay is valid (not negative, not null)
+        const validCycleDay = cycleDay && cycleDay > 0 ? cycleDay : 1;
 
-        if (showCountdown) {
+        // Use warningMessage prop if provided (from getPeriodWarningStatus)
+        // Or show statusMessage if cycle is extended
+        if (warningMessage) {
+          // Split "Period in X days" into two lines
+          const parts = warningMessage.split(" in ");
+          if (parts.length === 2) {
+            return (
+              <>
+                <SvgText
+                  x={size / 2}
+                  y={size / 2 - 10}
+                  fontSize="16"
+                  fontWeight="600"
+                  fill="#000000"
+                  textAnchor="middle"
+                  alignmentBaseline="middle"
+                >
+                  Period in
+                </SvgText>
+                <SvgText
+                  x={size / 2}
+                  y={size / 2 + 12}
+                  fontSize="16"
+                  fontWeight="600"
+                  fill="#000000"
+                  textAnchor="middle"
+                  alignmentBaseline="middle"
+                >
+                  {parts[1]}
+                </SvgText>
+              </>
+            );
+          }
+          // Single line message (e.g., "Your period may start today")
           return (
-            <>
-              <SvgText
-                x={size / 2}
-                y={size / 2 - 10}
-                fontSize="16"
-                fontWeight="600"
-                fill="#000000"
-                textAnchor="middle"
-                alignmentBaseline="middle"
-              >
-                Period in
-              </SvgText>
-              <SvgText
-                x={size / 2}
-                y={size / 2 + 12}
-                fontSize="16"
-                fontWeight="600"
-                fill="#000000"
-                textAnchor="middle"
-                alignmentBaseline="middle"
-              >
-                {`${daysUntilPeriod} ${daysUntilPeriod === 1 ? "day" : "days"}`}
-              </SvgText>
-            </>
+            <SvgText
+              x={size / 2}
+              y={size / 2}
+              fontSize="14"
+              fontWeight="600"
+              fill="#000000"
+              textAnchor="middle"
+              alignmentBaseline="middle"
+            >
+              {warningMessage}
+            </SvgText>
           );
         }
 
+        // Show status message if cycle is extended
+        if (isExtended && statusMessage) {
+          return (
+            <SvgText
+              x={size / 2}
+              y={size / 2}
+              fontSize="12"
+              fontWeight="600"
+              fill="#000000"
+              textAnchor="middle"
+              alignmentBaseline="middle"
+            >
+              {statusMessage}
+            </SvgText>
+          );
+        }
+
+        // Default: show Day X
         return (
           <SvgText
             x={size / 2}
@@ -315,10 +360,48 @@ export function CompactCycleWheel({
             textAnchor="middle"
             alignmentBaseline="middle"
           >
-            {`Day ${cycleDay}`}
+            {`Day ${validCycleDay}`}
           </SvgText>
         );
       })()}
+    </Svg>
+  );
+
+  // Simple wheel for dates before first cycle - shows "Log Period"
+  const beforeFirstCycleContent = (
+    <Svg width={size} height={size}>
+      {/* Simple gray ring */}
+      <Circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke="#E4E4E4"
+        strokeWidth={strokeWidth}
+        fill="transparent"
+      />
+      {/* Log Period text */}
+      <SvgText
+        x={size / 2}
+        y={size / 2 - 8}
+        fontSize="13"
+        fontWeight="500"
+        fill="#666666"
+        textAnchor="middle"
+        alignmentBaseline="middle"
+      >
+        Log
+      </SvgText>
+      <SvgText
+        x={size / 2}
+        y={size / 2 + 10}
+        fontSize="13"
+        fontWeight="500"
+        fill="#666666"
+        textAnchor="middle"
+        alignmentBaseline="middle"
+      >
+        Period
+      </SvgText>
     </Svg>
   );
 
@@ -385,6 +468,15 @@ export function CompactCycleWheel({
     </Svg>
   );
 
+  // Determine which content to show
+  const getWheelContent = () => {
+    if (!hasData) return "teaser";
+    if (isBeforeFirstCycle) return "beforeFirst";
+    return "normal";
+  };
+
+  const wheelType = getWheelContent();
+
   return (
     <View style={{ alignItems: "center", position: "relative" }}>
       {onAddPeriod ? (
@@ -400,7 +492,7 @@ export function CompactCycleWheel({
           }}
           style={{ position: "relative" }}
         >
-          {!hasData ? (
+          {wheelType === "teaser" ? (
             <Animated.View style={[styles.wheelContainer, animatedPressStyle]}>
               {teaserWheelContent}
               {/* Animated text overlay for teaser */}
@@ -415,6 +507,10 @@ export function CompactCycleWheel({
                 </Animated.View>
               </View>
             </Animated.View>
+          ) : wheelType === "beforeFirst" ? (
+            <Animated.View style={[styles.wheelContainer, animatedPressStyle]}>
+              {beforeFirstCycleContent}
+            </Animated.View>
           ) : (
             <Animated.View style={[styles.wheelContainer, animatedPressStyle]}>
               {wheelContent}
@@ -423,7 +519,9 @@ export function CompactCycleWheel({
         </Pressable>
       ) : (
         <View style={styles.wheelContainer}>
-          {hasData ? wheelContent : teaserWheelContent}
+          {wheelType === "teaser" ? teaserWheelContent :
+           wheelType === "beforeFirst" ? beforeFirstCycleContent :
+           wheelContent}
         </View>
       )}
     </View>

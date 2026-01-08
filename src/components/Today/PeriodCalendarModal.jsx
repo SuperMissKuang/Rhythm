@@ -48,6 +48,7 @@ export function PeriodCalendarModal({
   setEditingPeriod,
   onDeletePeriod,
   isDeletingCycle,
+  initialMonth = null, // Optional: Date object to open calendar to specific month
 }) {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
@@ -65,9 +66,11 @@ export function PeriodCalendarModal({
       setCalendarDate(editingPeriod.start_date);
     } else {
       setSelectedPeriodDate(null);
-      setCalendarDate(format(new Date(), "yyyy-MM-dd"));
+      // Use initialMonth if provided, otherwise default to current date
+      const dateToUse = initialMonth ? format(initialMonth, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
+      setCalendarDate(dateToUse);
     }
-  }, [editingPeriod]);
+  }, [editingPeriod, initialMonth]);
 
   const getPeriodDisplayName = (startDate, allCycles, index) => {
     const today = new Date();
@@ -505,16 +508,19 @@ export function PeriodCalendarModal({
                           >
                             {getPeriodWeekDateRange(cycle.start_date)}
                           </Text>
-                          <Text
-                            style={{
-                              fontSize: 11,
-                              fontFamily: "Montserrat_500Medium",
-                              color: colors.placeholder,
-                              marginTop: 1,
-                            }}
-                          >
-                            {cycle.cycle_length} day cycle
-                          </Text>
+                          {/* Only show cycle length for completed cycles (not the most recent one) */}
+                          {index > 0 && (
+                            <Text
+                              style={{
+                                fontSize: 11,
+                                fontFamily: "Montserrat_500Medium",
+                                color: colors.placeholder,
+                                marginTop: 1,
+                              }}
+                            >
+                              {cycle.cycle_length} day cycle
+                            </Text>
+                          )}
                         </View>
 
                         <TouchableOpacity

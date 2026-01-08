@@ -8,7 +8,7 @@ import {
   Montserrat_600SemiBold,
 } from "@expo-google-fonts/montserrat";
 import { useAppTheme } from "@/utils/theme";
-import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, RotateCcw, Info } from "lucide-react-native";
 import { router } from "expo-router";
 import {
   format,
@@ -26,6 +26,12 @@ import { useActivityStore } from "@/utils/stores/useActivityStore";
 import { useCycleStore } from "@/utils/stores/useCycleStore";
 import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
 import { useSelfCareStore } from "@/utils/stores/useSelfCareStore";
+import {
+  calculateStatistics,
+  sortCyclesChronologically,
+  filterOutliers,
+  OUTLIER_CONFIG,
+} from "@/utils/cycleStatistics";
 
 const NO_DATA_COLOR = "#E0E0E0";
 
@@ -59,6 +65,11 @@ export default function PatternScreen() {
   const [selectedFilter, setSelectedFilter] = useState(null);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [showMoreActivities, setShowMoreActivities] = useState(false);
+  const [showCycleInfoTooltip, setShowCycleInfoTooltip] = useState(false);
+
+  const todayYear = new Date().getFullYear();
+  const todayMonth = new Date().getMonth();
+  const isCurrentYear = currentYear === todayYear;
 
   const [fontsLoaded] = useFonts({
     Montserrat_500Medium,
@@ -100,7 +111,8 @@ export default function PatternScreen() {
   const currentSelectedFilter =
     selectedFilter || (allActivities.length > 0 ? allActivities[0] : null);
 
-  const handleMonthPress = (month) => {
+  const handleMonthPress = (month, isFutureMonth) => {
+    if (isFutureMonth) return;
     router.push({
       pathname: "/pattern-month",
       params: { month: format(month, "yyyy-MM") },
@@ -108,6 +120,7 @@ export default function PatternScreen() {
   };
 
   const handleNextYear = () => {
+    if (isCurrentYear) return; // Prevent going to future years
     setCurrentYear(currentYear + 1);
   };
 
@@ -255,10 +268,15 @@ export default function PatternScreen() {
 
     return (
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-        {months.map(({ month, weeks }) => (
+        {months.map(({ month, weeks }) => {
+          // Check if this month is in the future
+          const isFutureMonth = isCurrentYear && month.getMonth() > todayMonth;
+
+          return (
           <TouchableOpacity
             key={month.getMonth()}
-            onPress={() => handleMonthPress(month)}
+            onPress={() => handleMonthPress(month, isFutureMonth)}
+            disabled={isFutureMonth}
             style={{
               width: "32%",
               backgroundColor: colors.surface,
@@ -266,6 +284,7 @@ export default function PatternScreen() {
               padding: 12,
               borderWidth: 1,
               borderColor: colors.borderLight,
+              opacity: isFutureMonth ? 0.4 : 1,
             }}
           >
             <Text
@@ -333,9 +352,53 @@ export default function PatternScreen() {
               ))}
             </View>
           </TouchableOpacity>
-        ))}
+          );
+        })}
       </View>
     );
+  };
+
+  // Calculate cycle statistics for Period legend
+  const getCycleStats = () => {
+    if (!cycles || cycles.length === 0) {
+      return { hasData: false };
+    }
+
+    const sorted = sortCyclesChronologically(cycles);
+
+    // Exclude the most recent (ongoing) cycle - we don't know its actual length yet
+    // Only completed cycles have known lengths (calculated from gap to next cycle)
+    const completedCycles = sorted.slice(0, -1);
+
+    if (completedCycles.length === 0) {
+      // Only one cycle exists (the ongoing one), no stats to show yet
+      return { hasData: false };
+    }
+
+    const lengths = completedCycles.map((c) => c.cycle_length).filter((l) => l && l > 0);
+
+    if (lengths.length === 0) {
+      return { hasData: false };
+    }
+
+    const { mean, stdDev } = calculateStatistics(lengths);
+    const { validLengths, outlierIds } = filterOutliers(completedCycles);
+
+    // Get outlier details
+    const outlierCycles = completedCycles.filter((c) => outlierIds.includes(c.id));
+    const hasEnoughForOutliers = lengths.length >= OUTLIER_CONFIG.MIN_CYCLES_FOR_DETECTION;
+
+    return {
+      hasData: true,
+      average: Math.round(mean),
+      fluctuation: Math.round(stdDev),
+      stdDev: stdDev.toFixed(1),
+      cycleCount: lengths.length,
+      cyclesUsedForAvg: validLengths.length,
+      outlierCount: outlierCycles.length,
+      hasEnoughForOutliers,
+      allLengths: lengths,
+    };
   };
 
   const getLegendItems = () => {
@@ -349,7 +412,8 @@ export default function PatternScreen() {
     const darkMin = currentSelectedFilter.dark_saturation_min || 4;
 
     if (currentSelectedFilter.name === "Period") {
-      return [{ color: baseColor, label: "Period Days" }];
+      // Return empty - we'll show custom stats instead
+      return [];
     } else if (currentSelectedFilter.name === "Anxiety") {
       return [
         {
@@ -591,12 +655,14 @@ export default function PatternScreen() {
 
             <TouchableOpacity
               onPress={handleNextYear}
+              disabled={isCurrentYear}
               style={{
                 padding: 8,
                 backgroundColor: colors.surface,
                 borderRadius: 6,
                 borderWidth: 1,
                 borderColor: colors.borderLight,
+                opacity: isCurrentYear ? 0.3 : 1,
               }}
             >
               <ChevronRight size={24} color={colors.primary} />
@@ -606,36 +672,141 @@ export default function PatternScreen() {
           {/* Activity Pills - left aligned */}
           <View style={{ marginBottom: 24 }}>{renderActivityPills()}</View>
 
-          {/* Legend - left aligned, no title */}
+          {/* Legend / Stats section */}
           {currentSelectedFilter && (
-            <View style={{ marginBottom: 16 }}>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-                {getLegendItems().map((item, index) => (
-                  <View
-                    key={index}
-                    style={{ flexDirection: "row", alignItems: "center" }}
-                  >
+            <View style={{ marginBottom: 16, position: "relative", zIndex: 500 }}>
+              {currentSelectedFilter.name === "Period" ? (
+                // Cycle statistics for Period
+                (() => {
+                  const stats = getCycleStats();
+                  if (!stats.hasData) {
+                    return (
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontFamily: "Montserrat_500Medium",
+                          color: colors.secondary,
+                        }}
+                      >
+                        No period data yet
+                      </Text>
+                    );
+                  }
+                  return (
+                    <View style={{ position: "relative" }}>
+                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontFamily: "Montserrat_500Medium",
+                            color: colors.secondary,
+                          }}
+                        >
+                          Average cycle: <Text style={{ fontFamily: "Montserrat_600SemiBold", color: colors.primary }}>{stats.average} days</Text>
+                          {stats.fluctuation > 0 && (
+                            <Text>  •  Varies by <Text style={{ fontFamily: "Montserrat_600SemiBold", color: colors.primary }}>±{stats.fluctuation} days</Text></Text>
+                          )}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => setShowCycleInfoTooltip(!showCycleInfoTooltip)}
+                          style={{ marginLeft: 8, padding: 4 }}
+                        >
+                          <Info size={16} color={colors.secondary} />
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Tooltip */}
+                      {showCycleInfoTooltip && (
+                        <TouchableOpacity
+                          activeOpacity={1}
+                          onPress={() => setShowCycleInfoTooltip(false)}
+                          style={{
+                            position: "absolute",
+                            top: 28,
+                            left: 0,
+                            backgroundColor: colors.surface,
+                            borderRadius: 8,
+                            padding: 12,
+                            shadowColor: "#000",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.15,
+                            shadowRadius: 8,
+                            elevation: 5,
+                            borderWidth: 1,
+                            borderColor: colors.borderLight,
+                            minWidth: 220,
+                            zIndex: 1000,
+                          }}
+                        >
+                          {/* Tooltip arrow */}
+                          <View
+                            style={{
+                              position: "absolute",
+                              top: -6,
+                              left: 20,
+                              width: 12,
+                              height: 12,
+                              backgroundColor: colors.surface,
+                              transform: [{ rotate: "45deg" }],
+                              borderTopWidth: 1,
+                              borderLeftWidth: 1,
+                              borderColor: colors.borderLight,
+                            }}
+                          />
+                          <Text style={{ fontSize: 12, fontFamily: "Montserrat_600SemiBold", color: colors.primary, marginBottom: 8 }}>
+                            How this is calculated
+                          </Text>
+                          <Text style={{ fontSize: 11, fontFamily: "Montserrat_500Medium", color: colors.secondary, marginBottom: 4 }}>
+                            Based on {stats.cyclesUsedForAvg} of {stats.cycleCount} cycles
+                          </Text>
+                          <Text style={{ fontSize: 11, fontFamily: "Montserrat_500Medium", color: colors.secondary, marginBottom: 4 }}>
+                            Standard deviation: {stats.stdDev} days
+                          </Text>
+                          {stats.hasEnoughForOutliers && stats.outlierCount > 0 && (
+                            <Text style={{ fontSize: 11, fontFamily: "Montserrat_500Medium", color: colors.secondary }}>
+                              {stats.outlierCount} outlier{stats.outlierCount > 1 ? "s" : ""} excluded (unusual length)
+                            </Text>
+                          )}
+                          {!stats.hasEnoughForOutliers && (
+                            <Text style={{ fontSize: 11, fontFamily: "Montserrat_500Medium", color: colors.placeholder }}>
+                              Need {OUTLIER_CONFIG.MIN_CYCLES_FOR_DETECTION}+ cycles to detect outliers
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                })()
+              ) : (
+                // Standard legend for other activities
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+                  {getLegendItems().map((item, index) => (
                     <View
-                      style={{
-                        width: 12,
-                        height: 12,
-                        backgroundColor: item.color,
-                        borderRadius: 2,
-                        marginRight: 6,
-                      }}
-                    />
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontFamily: "Montserrat_500Medium",
-                        color: colors.secondary,
-                      }}
+                      key={index}
+                      style={{ flexDirection: "row", alignItems: "center" }}
                     >
-                      {item.label}
-                    </Text>
-                  </View>
-                ))}
-              </View>
+                      <View
+                        style={{
+                          width: 12,
+                          height: 12,
+                          backgroundColor: item.color,
+                          borderRadius: 2,
+                          marginRight: 6,
+                        }}
+                      />
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontFamily: "Montserrat_500Medium",
+                          color: colors.secondary,
+                        }}
+                      >
+                        {item.label}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           )}
 

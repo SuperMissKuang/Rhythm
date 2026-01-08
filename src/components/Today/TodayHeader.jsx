@@ -12,6 +12,10 @@ export function TodayHeader({
   totalDays,
   scaledPhases,
   hasData,
+  isExtended = false,
+  statusMessage = null,
+  isHardLimitViolation = false,
+  warningMessage = null,
 }) {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
@@ -54,6 +58,10 @@ export function TodayHeader({
           currentPhase={currentPhase}
           onAddPeriod={onAddPeriod}
           size={145}
+          isExtended={isExtended}
+          statusMessage={statusMessage}
+          isHardLimitViolation={isHardLimitViolation}
+          warningMessage={warningMessage}
         />
         {hasData && (
           <>

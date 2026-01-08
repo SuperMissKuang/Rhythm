@@ -15,6 +15,17 @@ export function useMenstrualCycles() {
     try {
       const result = await useCycleStore.getState().createCycle(data);
       setIsCreatingCycle(false);
+
+      // Check if validation failed
+      if (!result.success) {
+        const errorMessage = result.errors?.join("\n") || "Could not save period.";
+        Alert.alert("Cannot Log Period", errorMessage);
+        if (options.onError) {
+          options.onError(new Error(errorMessage));
+        }
+        return;
+      }
+
       if (options.onSuccess) {
         options.onSuccess(result);
       }
@@ -35,8 +46,19 @@ export function useMenstrualCycles() {
     setIsUpdatingCycle(true);
     try {
       const { id, ...updates } = data;
-      const result = await useCycleStore.getState().updateCycle(id, updates);
+      const result = await useCycleStore.getState().updateCycle(id, updates.data || updates);
       setIsUpdatingCycle(false);
+
+      // Check if validation failed
+      if (!result.success) {
+        const errorMessage = result.errors?.join("\n") || "Could not update period.";
+        Alert.alert("Cannot Update Period", errorMessage);
+        if (options.onError) {
+          options.onError(new Error(errorMessage));
+        }
+        return;
+      }
+
       if (options.onSuccess) {
         options.onSuccess(result);
       }

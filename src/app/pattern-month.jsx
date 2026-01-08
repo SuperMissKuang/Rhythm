@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, X } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   format,
@@ -13,6 +13,10 @@ import {
   differenceInDays,
   isSameMonth,
   parseISO,
+  addMonths,
+  subMonths,
+  isAfter,
+  startOfDay,
 } from "date-fns";
 import { useAppTheme } from "@/utils/theme";
 import { useActivityStore } from "@/utils/stores/useActivityStore";
@@ -57,6 +61,20 @@ export default function PatternMonthScreen() {
   // Parse the month from params (format: "2025-01")
   const selectedMonth = params.month ? parseISO(`${params.month}-01`) : new Date();
 
+  // Check if we're viewing the current month (disable forward navigation)
+  const isCurrentMonth = isSameMonth(selectedMonth, new Date());
+
+  const handlePreviousMonth = () => {
+    const previousMonth = subMonths(selectedMonth, 1);
+    router.setParams({ month: format(previousMonth, "yyyy-MM") });
+  };
+
+  const handleNextMonth = () => {
+    if (isCurrentMonth) return; // Prevent navigation to future months
+    const nextMonth = addMonths(selectedMonth, 1);
+    router.setParams({ month: format(nextMonth, "yyyy-MM") });
+  };
+
   // Normalize data format
   const cyclesData = { cycles };
   const anxietyData = { entries: anxietyEntries };
@@ -81,8 +99,10 @@ export default function PatternMonthScreen() {
     setEnabledActivities(new Set(activities.map((a) => a.id)));
   }, []);
 
-  const handleDayPress = (day, isCurrentMonth) => {
-    if (isCurrentMonth) {
+  const today = startOfDay(new Date());
+
+  const handleDayPress = (day, isClickable) => {
+    if (isClickable) {
       router.push({
         pathname: "/pattern-day",
         params: { date: format(day, "yyyy-MM-dd") },
@@ -218,18 +238,62 @@ export default function PatternMonthScreen() {
               borderBottomColor: colors.borderLight,
             }}
           >
+            {/* X button on left */}
             <TouchableOpacity onPress={() => router.back()}>
-              <ChevronLeft size={24} color={colors.primary} />
+              <X size={24} color={colors.primary} />
             </TouchableOpacity>
-            <Text
+
+            {/* Center group: [<] Month [>] */}
+            <View
               style={{
-                fontSize: 18,
-                fontFamily: "Montserrat_600SemiBold",
-                color: colors.primary,
+                flexDirection: "row",
+                alignItems: "center",
+                flex: 1,
+                justifyContent: "center",
               }}
             >
-              {format(selectedMonth, "MMMM yyyy")}
-            </Text>
+              <TouchableOpacity
+                onPress={handlePreviousMonth}
+                style={{
+                  padding: 8,
+                  backgroundColor: colors.surface,
+                  borderRadius: 6,
+                  borderWidth: 1,
+                  borderColor: colors.borderLight,
+                }}
+              >
+                <ChevronLeft size={20} color={colors.primary} />
+              </TouchableOpacity>
+
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontFamily: "Montserrat_600SemiBold",
+                  color: colors.primary,
+                  marginHorizontal: 16,
+                  textAlign: "center",
+                }}
+              >
+                {format(selectedMonth, "MMMM yyyy")}
+              </Text>
+
+              <TouchableOpacity
+                onPress={handleNextMonth}
+                disabled={isCurrentMonth}
+                style={{
+                  padding: 8,
+                  backgroundColor: colors.surface,
+                  borderRadius: 6,
+                  borderWidth: 1,
+                  borderColor: colors.borderLight,
+                  opacity: isCurrentMonth ? 0.3 : 1,
+                }}
+              >
+                <ChevronRight size={20} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Spacer on right to balance X button */}
             <View style={{ width: 24 }} />
           </View>
 
@@ -422,7 +486,9 @@ export default function PatternMonthScreen() {
                   style={{ flexDirection: "row", marginBottom: 12 }}
                 >
                   {week.map((day) => {
-                    const isCurrentMonth = isSameMonth(day, selectedMonth);
+                    const isInMonth = isSameMonth(day, selectedMonth);
+                    const isFutureDay = isAfter(startOfDay(day), today);
+                    const isClickable = isInMonth && !isFutureDay;
                     const dayActivities = getActivitiesForDate(day);
                     const daySize = 40;
                     const hasData = dayActivities.length > 0;
@@ -438,12 +504,12 @@ export default function PatternMonthScreen() {
                           position: "relative",
                         }}
                       >
-                        {/* Day background - clickable if current month */}
+                        {/* Day background - clickable if in month and not future */}
                         <TouchableOpacity
                           onPress={() =>
-                            handleDayPress(day, isCurrentMonth)
+                            handleDayPress(day, isClickable)
                           }
-                          disabled={!isCurrentMonth}
+                          disabled={!isClickable}
                           style={{
                             width: daySize,
                             height: daySize,
@@ -451,9 +517,9 @@ export default function PatternMonthScreen() {
                             borderRadius: 4,
                             justifyContent: "center",
                             alignItems: "center",
-                            borderWidth: isCurrentMonth ? 1 : 0,
+                            borderWidth: isInMonth && !isFutureDay ? 1 : 0,
                             borderColor: colors.borderLight,
-                            opacity: isCurrentMonth ? 1 : 0.3,
+                            opacity: isInMonth && !isFutureDay ? 1 : 0.3,
                           }}
                         >
                           {/* Always show day number */}
@@ -461,7 +527,7 @@ export default function PatternMonthScreen() {
                             style={{
                               fontSize: 14,
                               fontFamily: "Montserrat_500Medium",
-                              color: isCurrentMonth
+                              color: isClickable
                                 ? colors.primary
                                 : colors.secondary,
                             }}
@@ -471,7 +537,7 @@ export default function PatternMonthScreen() {
                         </TouchableOpacity>
 
                         {/* Activity dots */}
-                        {isCurrentMonth && dayActivities.length > 0 && (
+                        {isClickable && dayActivities.length > 0 && (
                           <View
                             style={{
                               position: "absolute",

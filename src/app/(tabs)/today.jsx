@@ -10,7 +10,7 @@ import { differenceInDays } from "date-fns";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAppTheme } from "@/utils/theme";
-import { getCurrentCycleInfo } from "@/utils/cycleUtils";
+import { getCurrentCycleInfo, getPeriodWarningStatus } from "@/utils/cycleUtils";
 import { useMenstrualCycles } from "@/utils/useMenstrualCycles";
 import { useTodayData } from "@/utils/useTodayData";
 
@@ -44,8 +44,14 @@ export default function TodayScreen() {
 
   const { timeSlotData } = useTodayData();
 
-  const { cycleDay, currentPhase, totalDays, scaledPhases, hasData } = useMemo(
+  const { cycleDay, currentPhase, totalDays, scaledPhases, hasData, isExtended, statusMessage, isHardLimitViolation } = useMemo(
     () => getCurrentCycleInfo(cycles),
+    [cycles],
+  );
+
+  // Get warning status for "Period in X days" display
+  const warningStatus = useMemo(
+    () => getPeriodWarningStatus(cycles),
     [cycles],
   );
 
@@ -75,6 +81,10 @@ export default function TodayScreen() {
         totalDays={totalDays}
         scaledPhases={scaledPhases}
         hasData={hasData}
+        isExtended={isExtended}
+        statusMessage={statusMessage}
+        isHardLimitViolation={isHardLimitViolation}
+        warningMessage={warningStatus.shouldWarn ? warningStatus.message : null}
       />
 
       <ActionButtons />
