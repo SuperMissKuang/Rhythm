@@ -624,6 +624,9 @@ export default function PatternScreen() {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
+              paddingBottom: 16,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.borderLight,
               marginBottom: 16,
             }}
           >
@@ -637,7 +640,7 @@ export default function PatternScreen() {
                 borderColor: colors.borderLight,
               }}
             >
-              <ChevronLeft size={24} color={colors.primary} />
+              <ChevronLeft size={20} color={colors.primary} />
             </TouchableOpacity>
 
             <Text
@@ -665,7 +668,7 @@ export default function PatternScreen() {
                 opacity: isCurrentYear ? 0.3 : 1,
               }}
             >
-              <ChevronRight size={24} color={colors.primary} />
+              <ChevronRight size={20} color={colors.primary} />
             </TouchableOpacity>
           </View>
 
@@ -709,7 +712,7 @@ export default function PatternScreen() {
                         </Text>
                         <TouchableOpacity
                           onPress={() => setShowCycleInfoTooltip(!showCycleInfoTooltip)}
-                          style={{ marginLeft: 8, padding: 4 }}
+                          style={{ marginLeft: 8 }}
                         >
                           <Info size={16} color={colors.secondary} />
                         </TouchableOpacity>
@@ -796,7 +799,7 @@ export default function PatternScreen() {
                       />
                       <Text
                         style={{
-                          fontSize: 12,
+                          fontSize: 13,
                           fontFamily: "Montserrat_500Medium",
                           color: colors.secondary,
                         }}

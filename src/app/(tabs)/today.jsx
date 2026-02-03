@@ -44,7 +44,7 @@ export default function TodayScreen() {
 
   const { timeSlotData } = useTodayData();
 
-  const { cycleDay, currentPhase, totalDays, scaledPhases, hasData, isExtended, statusMessage, isHardLimitViolation } = useMemo(
+  const { cycleDay, currentPhase, totalDays, scaledPhases, hasData, isHardLimitViolation } = useMemo(
     () => getCurrentCycleInfo(cycles),
     [cycles],
   );
@@ -81,10 +81,13 @@ export default function TodayScreen() {
         totalDays={totalDays}
         scaledPhases={scaledPhases}
         hasData={hasData}
-        isExtended={isExtended}
-        statusMessage={statusMessage}
         isHardLimitViolation={isHardLimitViolation}
-        warningMessage={warningStatus.shouldWarn ? warningStatus.message : null}
+        centerMessage={
+          warningStatus.daysUntil <= 0 ? "Period may start today" :
+          warningStatus.shouldWarn ? `Period in ${warningStatus.daysUntil} day${warningStatus.daysUntil === 1 ? '' : 's'}` :
+          null
+        }
+        daysLate={warningStatus.daysUntil < 0 ? Math.abs(warningStatus.daysUntil) : 0}
       />
 
       <ActionButtons />

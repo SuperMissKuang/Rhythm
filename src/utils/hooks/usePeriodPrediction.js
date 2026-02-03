@@ -15,7 +15,7 @@ import {
  * @returns {{
  *   prediction: { predictedDate: Date|null, daysUntil: number|null, confidence: string|null, basedOnCycles: number },
  *   warning: { shouldWarn: boolean, message: string|null, daysUntil: number|null },
- *   currentCycle: { cycleDay: number|null, isExtended: boolean, statusMessage: string|null },
+ *   currentCycle: { cycleDay: number|null, isExtended: boolean, statusMessage: string|null, daysLate: number },
  *   isLoading: boolean,
  *   hasData: boolean
  * }}
@@ -60,6 +60,7 @@ export function usePeriodPrediction(options = {}) {
         cycleDay: null,
         isExtended: false,
         statusMessage: null,
+        daysLate: 0,
         hasData: false,
       };
     }
@@ -68,6 +69,7 @@ export function usePeriodPrediction(options = {}) {
       cycleDay: info.cycleDay,
       isExtended: info.isExtended,
       statusMessage: info.statusMessage,
+      daysLate: info.daysLate,
       hasData: info.hasData,
       effectiveCycleLength: info.effectiveCycleLength,
       isHardLimitViolation: info.isHardLimitViolation,
@@ -90,6 +92,7 @@ export function usePeriodPrediction(options = {}) {
       cycleDay: currentCycleInfo.cycleDay,
       isExtended: currentCycleInfo.isExtended,
       statusMessage: currentCycleInfo.statusMessage,
+      daysLate: currentCycleInfo.daysLate,
       effectiveCycleLength: currentCycleInfo.effectiveCycleLength,
       isHardLimitViolation: currentCycleInfo.isHardLimitViolation,
     },

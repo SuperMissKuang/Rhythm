@@ -24,9 +24,16 @@ export const getAverageCycleLength = (cycles, options = {}) => {
     return 28; // Default fallback
   }
 
-  // Sort chronologically and get most recent cycles
+  // Sort chronologically and exclude the ongoing (most recent) cycle
+  // The ongoing cycle's length isn't determined yet
   const sortedCycles = sortCyclesChronologically(cycles);
-  const recentCycles = sortedCycles.slice(-maxCycles); // Take last N cycles
+  const completedCycles = sortedCycles.slice(0, -1);
+
+  if (completedCycles.length === 0) {
+    return 28; // Only have ongoing cycle, no history yet
+  }
+
+  const recentCycles = completedCycles.slice(-maxCycles); // Take last N completed cycles
 
   if (recentCycles.length === 1) {
     return recentCycles[0].cycle_length || 28;
@@ -81,6 +88,7 @@ export const getCurrentCycleInfo = (cycles, targetDate) => {
       statusMessage: null,
       isHardLimitViolation: false,
       isBeforeFirstCycle: false,
+      daysLate: 0,
     };
   }
 
@@ -101,6 +109,7 @@ export const getCurrentCycleInfo = (cycles, targetDate) => {
       statusMessage: null,
       isHardLimitViolation: false,
       isBeforeFirstCycle: true,
+      daysLate: 0,
     };
   }
 
@@ -140,6 +149,9 @@ export const getCurrentCycleInfo = (cycles, targetDate) => {
   // Determine if cycle is extended (past expected length)
   // ONLY applies to the ongoing cycle - completed cycles have known lengths
   const isExtended = isOngoingCycle && daysSinceStart >= expectedLength;
+
+  // Calculate how many days late (0 if not extended)
+  const daysLate = isExtended ? (daysSinceStart - expectedLength + 1) : 0;
 
   // Calculate effective cycle length for phase calculations
   let effectiveCycleLength;
@@ -188,6 +200,7 @@ export const getCurrentCycleInfo = (cycles, targetDate) => {
     statusMessage,
     isHardLimitViolation,
     isBeforeFirstCycle: false,
+    daysLate,
     relevantCycle, // Include the cycle object for reference
   };
 };

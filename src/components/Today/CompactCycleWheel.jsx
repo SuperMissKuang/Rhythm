@@ -26,11 +26,10 @@ export function CompactCycleWheel({
   currentPhase,
   onAddPeriod,
   showCenterText = true,
-  isExtended = false,
-  statusMessage = null,
   isHardLimitViolation = false,
-  warningMessage = null, // "Period in X days" message from getPeriodWarningStatus
   isBeforeFirstCycle = false, // Date is before first logged cycle
+  centerMessage = null, // "Period may start today" or "Period in X days"
+  daysLate = 0, // Number of days late (for "X days late" secondary text)
 }) {
   const { colors } = useAppTheme();
   const scale = useSharedValue(1);
@@ -283,11 +282,56 @@ export function CompactCycleWheel({
         // Ensure cycleDay is valid (not negative, not null)
         const validCycleDay = cycleDay && cycleDay > 0 ? cycleDay : 1;
 
-        // Use warningMessage prop if provided (from getPeriodWarningStatus)
-        // Or show statusMessage if cycle is extended
-        if (warningMessage) {
-          // Split "Period in X days" into two lines
-          const parts = warningMessage.split(" in ");
+        // Show center message if provided
+        if (centerMessage) {
+          const isTodayMessage = centerMessage.includes("today");
+          const hasLateText = daysLate > 0;
+
+          if (isTodayMessage) {
+            // "Period may start today" with optional "X days late"
+            return (
+              <>
+                <SvgText
+                  x={size / 2}
+                  y={hasLateText ? size / 2 - 16 : size / 2 - 8}
+                  fontSize="13"
+                  fontWeight="600"
+                  fill="#000000"
+                  textAnchor="middle"
+                  alignmentBaseline="middle"
+                >
+                  Period may
+                </SvgText>
+                <SvgText
+                  x={size / 2}
+                  y={hasLateText ? size / 2 + 2 : size / 2 + 10}
+                  fontSize="13"
+                  fontWeight="600"
+                  fill="#000000"
+                  textAnchor="middle"
+                  alignmentBaseline="middle"
+                >
+                  start today
+                </SvgText>
+                {hasLateText && (
+                  <SvgText
+                    x={size / 2}
+                    y={size / 2 + 20}
+                    fontSize="11"
+                    fontWeight="500"
+                    fill={colors.secondary}
+                    textAnchor="middle"
+                    alignmentBaseline="middle"
+                  >
+                    {daysLate} day{daysLate === 1 ? '' : 's'} late
+                  </SvgText>
+                )}
+              </>
+            );
+          }
+
+          // "Period in X days" - split into two lines
+          const parts = centerMessage.split(" in ");
           if (parts.length === 2) {
             return (
               <>
@@ -316,37 +360,6 @@ export function CompactCycleWheel({
               </>
             );
           }
-          // Single line message (e.g., "Your period may start today")
-          return (
-            <SvgText
-              x={size / 2}
-              y={size / 2}
-              fontSize="14"
-              fontWeight="600"
-              fill="#000000"
-              textAnchor="middle"
-              alignmentBaseline="middle"
-            >
-              {warningMessage}
-            </SvgText>
-          );
-        }
-
-        // Show status message if cycle is extended
-        if (isExtended && statusMessage) {
-          return (
-            <SvgText
-              x={size / 2}
-              y={size / 2}
-              fontSize="12"
-              fontWeight="600"
-              fill="#000000"
-              textAnchor="middle"
-              alignmentBaseline="middle"
-            >
-              {statusMessage}
-            </SvgText>
-          );
         }
 
         // Default: show Day X

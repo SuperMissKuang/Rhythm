@@ -46,7 +46,7 @@ export default function PatternDayScreen() {
 
   const { timeSlotData } = useDayData(selectedDate);
 
-  const { cycleDay, currentPhase, totalDays, scaledPhases, isExtended, statusMessage, isHardLimitViolation, isBeforeFirstCycle } = useMemo(
+  const { cycleDay, currentPhase, totalDays, scaledPhases, isExtended, daysLate, isHardLimitViolation, isBeforeFirstCycle } = useMemo(
     () => getCurrentCycleInfo(cycles, selectedDate),
     [cycles, selectedDate],
   );
@@ -105,9 +105,9 @@ export default function PatternDayScreen() {
             onPreviousDay={handlePreviousDay}
             onNextDay={handleNextDay}
             isToday={isToday}
-            isExtended={isExtended}
-            statusMessage={statusMessage}
             isHardLimitViolation={isHardLimitViolation}
+            centerMessage={isExtended ? "Period may start today" : null}
+            daysLate={daysLate}
             isBeforeFirstCycle={isBeforeFirstCycle}
             onAddPeriod={handleAddPeriod}
           />

@@ -225,7 +225,7 @@ export default function PatternMonthScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView style={{ flex: 1 }}>
-        <View style={{ paddingTop: insets.top }}>
+        <View style={{ paddingTop: insets.top + 8 }}>
           {/* Header */}
           <View
             style={{
@@ -233,9 +233,10 @@ export default function PatternMonthScreen() {
               alignItems: "center",
               justifyContent: "space-between",
               paddingHorizontal: 20,
-              paddingVertical: 16,
+              paddingBottom: 16,
               borderBottomWidth: 1,
               borderBottomColor: colors.borderLight,
+              marginBottom: 16,
             }}
           >
             {/* X button on left */}
@@ -298,18 +299,7 @@ export default function PatternMonthScreen() {
           </View>
 
           {/* Activity Toggles */}
-          <View style={{ paddingHorizontal: 20, paddingVertical: 16 }}>
-            <Text
-              style={{
-                fontSize: 16,
-                fontFamily: "Montserrat_600SemiBold",
-                color: colors.primary,
-                marginBottom: 12,
-              }}
-            >
-              Activities
-            </Text>
-
+          <View style={{ paddingHorizontal: 20, marginBottom: 24 }}>
             <View style={{ position: "relative" }}>
               <View style={{ flexDirection: "row", gap: 6, flexWrap: "nowrap" }}>
                 {(() => {

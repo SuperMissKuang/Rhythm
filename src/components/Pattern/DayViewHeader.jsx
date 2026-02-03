@@ -16,29 +16,29 @@ export function DayViewHeader({
   onPreviousDay,
   onNextDay,
   isToday,
-  isExtended = false,
-  statusMessage = null,
   isHardLimitViolation = false,
   isBeforeFirstCycle = false,
   onAddPeriod,
+  centerMessage = null,
+  daysLate = 0,
 }) {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const formattedDate = format(date, "EEE, MMM d, yyyy");
 
   return (
-    <View style={{ backgroundColor: colors.background }}>
+    <View style={{ backgroundColor: colors.background, paddingTop: insets.top + 8 }}>
       {/* Header Row: [X] [<] Date [>] */}
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
-          paddingTop: insets.top,
           paddingHorizontal: 20,
-          paddingVertical: 16,
+          paddingBottom: 16,
           borderBottomWidth: 1,
           borderBottomColor: colors.borderLight,
+          marginBottom: 16,
         }}
       >
         {/* X button on left */}
@@ -113,11 +113,11 @@ export function DayViewHeader({
           totalDays={totalDays}
           scaledPhases={scaledPhases}
           size={145}
-          isExtended={isExtended}
-          statusMessage={statusMessage}
           isHardLimitViolation={isHardLimitViolation}
           isBeforeFirstCycle={isBeforeFirstCycle}
           onAddPeriod={onAddPeriod}
+          centerMessage={centerMessage}
+          daysLate={daysLate}
         />
         {currentPhase && !isBeforeFirstCycle && (
           <>
