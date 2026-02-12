@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import {
   useFonts,
   Montserrat_500Medium,
@@ -48,27 +48,32 @@ export default function DebugScenariosScreen() {
         {
           text: "Load",
           style: "destructive",
-          onPress: async () => {
+          onPress: () => {
             const generatedCycles = scenario.generate();
-            const result = await loadDebugScenario(generatedCycles);
 
-            if (result.success) {
-              Toast.show({
-                type: "success",
-                text1: "Scenario Loaded",
-                text2: `Loaded "${scenario.title}" with ${generatedCycles.length} cycles`,
-                position: "bottom",
-                visibilityTime: 3000,
-              });
-            } else {
-              Toast.show({
-                type: "error",
-                text1: "Failed to Load",
-                text2: result.errors[0] || "Unknown error",
-                position: "bottom",
-                visibilityTime: 3000,
-              });
-            }
+            // Navigate to Today tab first, then load data so the change is visible
+            router.replace("/(tabs)/today");
+            setTimeout(async () => {
+              const result = await loadDebugScenario(generatedCycles);
+
+              if (result.success) {
+                Toast.show({
+                  type: "success",
+                  text1: "Scenario Loaded",
+                  text2: `Loaded "${scenario.title}" with ${generatedCycles.length} cycles`,
+                  position: "bottom",
+                  visibilityTime: 3000,
+                });
+              } else {
+                Toast.show({
+                  type: "error",
+                  text1: "Failed to Load",
+                  text2: result.errors[0] || "Unknown error",
+                  position: "bottom",
+                  visibilityTime: 3000,
+                });
+              }
+            }, 300);
           },
         },
       ]
