@@ -293,8 +293,8 @@ export function CompactCycleWheel({
               <>
                 <SvgText
                   x={size / 2}
-                  y={hasLateText ? size / 2 - 16 : size / 2 - 8}
-                  fontSize="13"
+                  y={hasLateText ? size / 2 - 10 : size / 2 - 8}
+                  fontSize="14"
                   fontWeight="600"
                   fill="#000000"
                   textAnchor="middle"
@@ -304,8 +304,8 @@ export function CompactCycleWheel({
                 </SvgText>
                 <SvgText
                   x={size / 2}
-                  y={hasLateText ? size / 2 + 2 : size / 2 + 10}
-                  fontSize="13"
+                  y={hasLateText ? size / 2 + 6 : size / 2 + 10}
+                  fontSize="14"
                   fontWeight="600"
                   fill="#000000"
                   textAnchor="middle"
@@ -316,14 +316,14 @@ export function CompactCycleWheel({
                 {hasLateText && (
                   <SvgText
                     x={size / 2}
-                    y={size / 2 + 20}
+                    y={size / 2 + 24}
                     fontSize="11"
                     fontWeight="500"
                     fill={colors.secondary}
                     textAnchor="middle"
                     alignmentBaseline="middle"
                   >
-                    {daysLate} day{daysLate === 1 ? '' : 's'} late
+                    {`${daysLate} ${daysLate === 1 ? 'day' : 'days'} late`}
                   </SvgText>
                 )}
               </>

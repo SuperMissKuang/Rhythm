@@ -106,7 +106,7 @@ export default function PatternDayScreen() {
             onNextDay={handleNextDay}
             isToday={isToday}
             isHardLimitViolation={isHardLimitViolation}
-            centerMessage={isExtended ? "Period may start today" : null}
+            centerMessage={isToday && isExtended ? "Period may start today" : null}
             daysLate={daysLate}
             isBeforeFirstCycle={isBeforeFirstCycle}
             onAddPeriod={handleAddPeriod}
