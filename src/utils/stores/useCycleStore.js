@@ -339,4 +339,40 @@ export const useCycleStore = create((set, get) => ({
       throw error;
     }
   },
+
+  /**
+   * Load a debug scenario (development only)
+   * @param {Array} cycles - Array of cycle objects to load
+   * @returns {{ success: boolean, errors: Array<string> }}
+   */
+  loadDebugScenario: async (cycles) => {
+    if (!__DEV__) {
+      console.warn("loadDebugScenario is only available in development mode");
+      return { success: false, errors: ["Not available in production"] };
+    }
+
+    try {
+      // Normalize all cycles
+      let normalizedCycles = cycles
+        .filter((cycle) => cycle && (cycle.start_date || cycle.startDate))
+        .map(normalizeCycle)
+        .filter((cycle) => cycle && cycle.start_date);
+
+      // Recalculate cycle lengths
+      if (normalizedCycles.length > 0) {
+        normalizedCycles = recalculateCycleLengths(normalizedCycles);
+        normalizedCycles = updateOutlierFlags(normalizedCycles);
+      }
+
+      // Save to AsyncStorage and update state
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedCycles));
+      set({ cycles: normalizedCycles });
+
+      console.log("Loaded debug scenario with", normalizedCycles.length, "cycles");
+      return { success: true, errors: [] };
+    } catch (error) {
+      console.error("Error loading debug scenario:", error);
+      return { success: false, errors: [error.message] };
+    }
+  },
 }));

@@ -9,7 +9,7 @@ import {
   Montserrat_600SemiBold,
 } from "@expo-google-fonts/montserrat";
 import { useAppTheme } from "@/utils/theme";
-import { Palette, Users, Database, ChevronRight } from "lucide-react-native";
+import { Palette, Users, Database, ChevronRight, Bug } from "lucide-react-native";
 
 export default function MoreScreen() {
   const insets = useSafeAreaInsets();
@@ -53,6 +53,20 @@ export default function MoreScreen() {
       iconBgColor: "#E6F7F0",
       route: "/data-management",
     },
+    // Debug menu item - only in development
+    ...(__DEV__
+      ? [
+          {
+            id: "debug",
+            title: "Debug Scenarios",
+            description: "Load test data for different app states",
+            icon: Bug,
+            iconColor: "#EF4444",
+            iconBgColor: "#FEE2E2",
+            route: "/debug-scenarios",
+          },
+        ]
+      : []),
   ];
 
   return (
