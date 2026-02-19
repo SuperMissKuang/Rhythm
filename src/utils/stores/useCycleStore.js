@@ -4,7 +4,6 @@ import {
   sortCyclesChronologically,
   recalculateCycleLengths,
   updateOutlierFlags,
-  validateNewCycleDate,
   checkDataIntegrity,
 } from "@/utils/cycleStatistics";
 
@@ -117,22 +116,6 @@ export const useCycleStore = create((set, get) => ({
       const normalizedData = normalizeCycle(cycleData);
       const existingCycles = get().cycles;
 
-      // Validate the new cycle date
-      const validation = validateNewCycleDate(
-        normalizedData.start_date,
-        existingCycles
-      );
-
-      if (!validation.isValid) {
-        console.warn("Cycle validation failed:", validation.message);
-        return {
-          success: false,
-          cycle: null,
-          errors: [validation.message],
-          action: validation.action,
-        };
-      }
-
       const newCycle = {
         id: Date.now().toString(),
         userId: "default-user",
@@ -170,8 +153,6 @@ export const useCycleStore = create((set, get) => ({
         success: true,
         cycle: createdCycle,
         errors: [],
-        action: validation.action,
-        message: validation.message,
       };
     } catch (error) {
       console.error("Error creating cycle:", error);
@@ -205,26 +186,6 @@ export const useCycleStore = create((set, get) => ({
 
       // Normalize the updates
       const normalizedUpdates = normalizeCycle(updates);
-
-      // If start_date is being changed, validate it
-      if (
-        normalizedUpdates.start_date &&
-        normalizedUpdates.start_date !== cycleToUpdate.start_date
-      ) {
-        const otherCycles = existingCycles.filter((c) => c.id !== id);
-        const validation = validateNewCycleDate(
-          normalizedUpdates.start_date,
-          otherCycles
-        );
-
-        if (!validation.isValid) {
-          return {
-            success: false,
-            cycle: null,
-            errors: [validation.message],
-          };
-        }
-      }
 
       // Update the cycle
       let updatedCycles = existingCycles.map((cycle) =>

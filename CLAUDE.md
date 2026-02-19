@@ -91,6 +91,13 @@ The project uses `@/*` aliases for clean imports:
 import { useAuth } from "@/utils/auth/useAuth";
 ```
 
+## Working with the Developer
+
+- The developer is learning to code — don't assume familiarity with software patterns or architecture concepts.
+- When a design decision comes up, **first check if there's a standard/established pattern** before reasoning from scratch. Say "there's a standard pattern for this" and explain it, rather than presenting open-ended tradeoffs.
+- Use analogies to explain architectural concepts (e.g., restaurant: customer/waiter/kitchen for component/hook/store).
+- Don't deliberate on solved problems. If the wheel exists, say so immediately.
+
 ## Development Notes
 
 - The app supports both mobile and web platforms
