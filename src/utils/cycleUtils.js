@@ -59,14 +59,37 @@ export const getAverageCycleLength = (cycles, options = {}) => {
 };
 
 // Get scaled phase durations based on actual cycle length
-// Uses proportional scaling to maintain phase relationships
+// Menstrual and Luteal phases stay fixed; Follicular and Ovulation absorb the difference.
+// This reflects that the luteal phase is relatively constant (~12 days) while the
+// follicular phase varies with cycle length.
 export const getScaledPhaseDurations = (actualCycleLength) => {
-  const standardCycleLength = 28;
-  const scaleFactor = actualCycleLength / standardCycleLength;
+  const menstrualDuration = 5;
+  const lutealDuration = 12;
+  const fixedDays = menstrualDuration + lutealDuration;
+
+  // For very short cycles, fall back to proportional scaling
+  if (actualCycleLength <= fixedDays) {
+    const scaleFactor = actualCycleLength / 28;
+    return CYCLE_PHASES.map((phase) => ({
+      ...phase,
+      duration: Math.round(phase.duration * scaleFactor),
+    }));
+  }
+
+  const variableDays = actualCycleLength - fixedDays;
+  const follicularDuration = Math.round(variableDays * (7 / 11));
+  const ovulationDuration = variableDays - follicularDuration;
 
   return CYCLE_PHASES.map((phase) => ({
     ...phase,
-    duration: Math.round(phase.duration * scaleFactor),
+    duration:
+      phase.name === "Menstrual"
+        ? menstrualDuration
+        : phase.name === "Follicular"
+          ? follicularDuration
+          : phase.name === "Ovulation"
+            ? ovulationDuration
+            : lutealDuration,
   }));
 };
 
