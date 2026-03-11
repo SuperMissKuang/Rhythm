@@ -25,6 +25,8 @@ const normalizeCycle = (cycle) => {
     is_outlier: cycle.is_outlier ?? false,
     outlier_reason: cycle.outlier_reason ?? null,
     is_hard_limit_violation: cycle.is_hard_limit_violation ?? false,
+    // User acknowledgment of outlier status: null | "mistake" | "confirmed"
+    outlier_acknowledged: cycle.outlier_acknowledged ?? null,
     // Remove camelCase versions if they exist
     startDate: undefined,
     cycleLength: undefined,
@@ -298,6 +300,27 @@ export const useCycleStore = create((set, get) => ({
     } catch (error) {
       console.error("Error clearing cycles:", error);
       throw error;
+    }
+  },
+
+  /**
+   * Acknowledge an outlier cycle as either a logging mistake or a confirmed real cycle
+   * @param {string} cycleId - The cycle ID to acknowledge
+   * @param {"mistake"|"confirmed"} response - The user's response
+   */
+  acknowledgeCycleOutlier: async (cycleId, response) => {
+    try {
+      const existingCycles = get().cycles;
+      const updatedCycles = existingCycles.map((cycle) =>
+        cycle.id === cycleId
+          ? { ...cycle, outlier_acknowledged: response }
+          : cycle
+      );
+
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCycles));
+      set({ cycles: updatedCycles });
+    } catch (error) {
+      console.error("Error acknowledging outlier:", error);
     }
   },
 

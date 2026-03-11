@@ -242,6 +242,15 @@ export default function PatternScreen() {
     return NO_DATA_COLOR;
   };
 
+  // Check if a date is the start of an outlier cycle
+  const isOutlierCycleStart = (date) => {
+    const dateString = format(date, "yyyy-MM-dd");
+    const allCycles = cyclesData?.cycles || [];
+    return allCycles.some(
+      (cycle) => cycle.start_date === dateString && cycle.is_outlier,
+    );
+  };
+
   const renderYearView = () => {
     const monthsCount = 12;
     const months = Array.from({ length: monthsCount }, (_, monthIndex) => {
@@ -326,6 +335,7 @@ export default function PatternScreen() {
                       day,
                       currentSelectedFilter,
                     );
+                    const isOutlierStart = isCurrentMonth && currentSelectedFilter?.name === "Period" && isOutlierCycleStart(day);
 
                     return (
                       <View
@@ -342,8 +352,8 @@ export default function PatternScreen() {
                             : "transparent",
                           borderRadius: 1,
                           opacity: isCurrentMonth ? 1 : 0.2,
-                          borderWidth: isCurrentMonth ? 0.5 : 0,
-                          borderColor: colors.borderLight,
+                          borderWidth: isOutlierStart ? 1.5 : isCurrentMonth ? 0.5 : 0,
+                          borderColor: isOutlierStart ? "#E57373" : colors.borderLight,
                         }}
                       />
                     );

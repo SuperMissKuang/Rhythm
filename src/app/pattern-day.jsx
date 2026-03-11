@@ -46,7 +46,7 @@ export default function PatternDayScreen() {
 
   const { timeSlotData } = useDayData(selectedDate);
 
-  const { cycleDay, currentPhase, totalDays, scaledPhases, isExtended, daysLate, isHardLimitViolation, isBeforeFirstCycle } = useMemo(
+  const { cycleDay, currentPhase, totalDays, scaledPhases, isExtended, daysLate, isHardLimitViolation, isBeforeFirstCycle, isOutlier, outlierAcknowledged, cycleId } = useMemo(
     () => getCurrentCycleInfo(cycles, selectedDate),
     [cycles, selectedDate],
   );
@@ -110,6 +110,9 @@ export default function PatternDayScreen() {
             daysLate={daysLate}
             isBeforeFirstCycle={isBeforeFirstCycle}
             onAddPeriod={handleAddPeriod}
+            isOutlier={isOutlier}
+            outlierAcknowledged={outlierAcknowledged}
+            cycleId={cycleId}
           />
 
           <DayViewTimeline timeSlotData={timeSlotData} date={selectedDate} />

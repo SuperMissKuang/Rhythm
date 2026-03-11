@@ -106,6 +106,15 @@ export function MonthDetailModal({
     return null;
   };
 
+  // Check if a date is the start of an outlier cycle
+  const isOutlierCycleStart = (date) => {
+    const dateString = format(date, "yyyy-MM-dd");
+    const cycles = cyclesData?.cycles || [];
+    return cycles.some(
+      (cycle) => cycle.start_date === dateString && cycle.is_outlier,
+    );
+  };
+
   const getActivityDataForDate = (date, activity) => {
     const dateString = format(date, "yyyy-MM-dd");
 
@@ -459,6 +468,7 @@ export function MonthDetailModal({
                       const dayActivities = getActivitiesForDate(day);
                       const daySize = 40; // Fixed day size
                       const hasData = dayActivities.length > 0;
+                      const isOutlierStart = isCurrentMonth && isOutlierCycleStart(day);
 
                       return (
                         <View
@@ -484,8 +494,8 @@ export function MonthDetailModal({
                               borderRadius: 4,
                               justifyContent: "center",
                               alignItems: "center",
-                              borderWidth: isCurrentMonth ? 1 : 0,
-                              borderColor: colors.borderLight,
+                              borderWidth: isOutlierStart ? 2 : isCurrentMonth ? 1 : 0,
+                              borderColor: isOutlierStart ? "#E57373" : colors.borderLight,
                               opacity: isCurrentMonth ? 1 : 0.3,
                             }}
                           >

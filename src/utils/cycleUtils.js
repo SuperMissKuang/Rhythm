@@ -77,8 +77,11 @@ export const getScaledPhaseDurations = (actualCycleLength) => {
   }
 
   const variableDays = actualCycleLength - fixedDays;
-  const follicularDuration = Math.round(variableDays * (7 / 11));
-  const ovulationDuration = variableDays - follicularDuration;
+  // Ovulation is biologically brief (~2-4 days) regardless of cycle length.
+  // When cycles are long, it's the follicular phase that stretches.
+  const baseOvulation = 4;
+  const ovulationDuration = Math.min(baseOvulation, variableDays);
+  const follicularDuration = variableDays - ovulationDuration;
 
   return CYCLE_PHASES.map((phase) => ({
     ...phase,
@@ -225,6 +228,11 @@ export const getCurrentCycleInfo = (cycles, targetDate) => {
     isBeforeFirstCycle: false,
     daysLate,
     relevantCycle, // Include the cycle object for reference
+    // Outlier info for the relevant cycle
+    isOutlier: relevantCycle.is_outlier ?? false,
+    outlierReason: relevantCycle.outlier_reason ?? null,
+    outlierAcknowledged: relevantCycle.outlier_acknowledged ?? null,
+    cycleId: relevantCycle.id,
   };
 };
 

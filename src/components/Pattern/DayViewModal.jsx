@@ -14,7 +14,7 @@ export function DayViewModal({ visible, onClose, selectedDate, cycles = [] }) {
 
   const { timeSlotData } = useDayData(selectedDate || new Date());
 
-  const { cycleDay, currentPhase, totalDays, scaledPhases, isExtended, daysLate, isHardLimitViolation } = useMemo(
+  const { cycleDay, currentPhase, totalDays, scaledPhases, isExtended, daysLate, isHardLimitViolation, isOutlier, outlierAcknowledged, cycleId } = useMemo(
     () => getCurrentCycleInfo(cycles, selectedDate),
     [cycles, selectedDate],
   );
@@ -54,6 +54,9 @@ export function DayViewModal({ visible, onClose, selectedDate, cycles = [] }) {
           isHardLimitViolation={isHardLimitViolation}
           centerMessage={isExtended ? "Period may start today" : null}
           daysLate={daysLate}
+          isOutlier={isOutlier}
+          outlierAcknowledged={outlierAcknowledged}
+          cycleId={cycleId}
         />
 
         <DayViewTimeline timeSlotData={timeSlotData} date={selectedDate} />

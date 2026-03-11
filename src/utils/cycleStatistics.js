@@ -2,10 +2,14 @@ import { parseISO, differenceInDays } from "date-fns";
 
 /**
  * Configuration for outlier detection
+ * Uses Modified Z-Score with MAD (Median Absolute Deviation) — the NIST-recommended
+ * method for small datasets. Unlike mean/stdDev, the median and MAD are "robust"
+ * statistics that aren't distorted by the very outliers we're trying to detect.
  */
 export const OUTLIER_CONFIG = {
   MIN_CYCLES_FOR_DETECTION: 3, // Need 3+ cycles for statistical detection
-  STD_DEV_THRESHOLD: 2, // Flag if >2 std deviations from mean
+  MODIFIED_Z_THRESHOLD: 3.5, // NIST-recommended threshold for Modified Z-Score
+  MAD_FLOOR: 1, // Minimum MAD value (days) when all cycles are identical
 };
 
 /**
@@ -64,8 +68,28 @@ export const calculateStatistics = (lengths) => {
 };
 
 /**
- * Determine if a cycle length is an outlier based on user's personal history
- * Uses purely statistical detection (2 std dev) - no hard limits on what's "normal"
+ * Calculate the median of a sorted array of numbers
+ * @param {Array<number>} sorted - Sorted array of numbers
+ * @returns {number}
+ */
+const getMedian = (sorted) => {
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+};
+
+/**
+ * Determine if a cycle length is an outlier based on user's personal history.
+ *
+ * Uses Modified Z-Score with MAD (Median Absolute Deviation), the NIST-recommended
+ * approach for small datasets. Unlike mean/stdDev which are distorted by the very
+ * outliers we're trying to find (the "masking" problem), median and MAD are robust
+ * statistics that aren't affected by extreme values.
+ *
+ * Formula: Modified Z-Score = 0.6745 × (value - median) / MAD
+ * Threshold: |Modified Z-Score| > 3.5 (NIST recommendation)
+ *
  * @param {number} cycleLength - The cycle length to check
  * @param {Array<number>} allLengths - All historical cycle lengths
  * @returns {{ isOutlier: boolean, reason: string|null }}
@@ -80,17 +104,21 @@ export const isOutlierCycle = (cycleLength, allLengths) => {
     return { isOutlier: false, reason: null };
   }
 
-  const { mean, stdDev } = calculateStatistics(allLengths);
+  const sorted = [...allLengths].sort((a, b) => a - b);
+  const median = getMedian(sorted);
 
-  // If stdDev is very small (consistent cycles), use a minimum threshold
-  const threshold = stdDev > 0 ? OUTLIER_CONFIG.STD_DEV_THRESHOLD * stdDev : 3;
+  // MAD = median of |each value - median|
+  const absoluteDeviations = sorted.map((v) => Math.abs(v - median)).sort((a, b) => a - b);
+  const mad = Math.max(getMedian(absoluteDeviations), OUTLIER_CONFIG.MAD_FLOOR);
 
-  const deviation = Math.abs(cycleLength - mean);
+  // Modified Z-Score: 0.6745 is the 0.75th quartile of the standard normal distribution,
+  // which makes the Modified Z-Score comparable to a standard Z-Score for normal data
+  const modifiedZScore = (0.6745 * (cycleLength - median)) / mad;
 
-  if (deviation > threshold) {
+  if (Math.abs(modifiedZScore) > OUTLIER_CONFIG.MODIFIED_Z_THRESHOLD) {
     return {
       isOutlier: true,
-      reason: cycleLength > mean ? "longer" : "shorter",
+      reason: cycleLength > median ? "longer" : "shorter",
     };
   }
 
