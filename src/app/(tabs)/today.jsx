@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { View, ScrollView } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -6,8 +6,8 @@ import {
   Montserrat_500Medium,
   Montserrat_600SemiBold,
 } from "@expo-google-fonts/montserrat";
-import { differenceInDays } from "date-fns";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 
 import { useAppTheme } from "@/utils/theme";
 import { getCurrentCycleInfo, getPeriodWarningStatus } from "@/utils/cycleUtils";
@@ -17,8 +17,6 @@ import { useTodayData } from "@/utils/useTodayData";
 import { TodayHeader } from "@/components/Today/TodayHeader";
 import { ActionButtons } from "@/components/Today/ActionButtons";
 import { Timeline } from "@/components/Today/Timeline";
-import { PeriodCalendarModal } from "@/components/Today/PeriodCalendarModal";
-import { EditPeriodModal } from "@/components/Today/EditPeriodModal";
 
 export default function TodayScreen() {
   const { isDark, colors } = useAppTheme();
@@ -29,19 +27,7 @@ export default function TodayScreen() {
     Montserrat_600SemiBold,
   });
 
-  const [showCalendarModal, setShowCalendarModal] = useState(false);
-  const [editingPeriod, setEditingPeriod] = useState(null);
-
-  const {
-    cycles,
-    createCycle,
-    isCreatingCycle,
-    updateCycle,
-    isUpdatingCycle,
-    deleteCycle,
-    isDeletingCycle,
-  } = useMenstrualCycles();
-
+  const { cycles } = useMenstrualCycles();
   const { timeSlotData } = useTodayData();
 
   const { cycleDay, currentPhase, totalDays, scaledPhases, hasData, isHardLimitViolation } = useMemo(
@@ -49,19 +35,10 @@ export default function TodayScreen() {
     [cycles],
   );
 
-  // Get warning status for "Period in X days" display
   const warningStatus = useMemo(
     () => getPeriodWarningStatus(cycles),
     [cycles],
   );
-
-  const handleDeletePeriod = (id) => {
-    deleteCycle(id, {
-      onSuccess: () => {
-        // Additional success handling if needed
-      },
-    });
-  };
 
   if (!fontsLoaded) {
     return null;
@@ -72,10 +49,7 @@ export default function TodayScreen() {
       <StatusBar style={isDark ? "light" : "dark"} />
 
       <TodayHeader
-        onAddPeriod={() => {
-          setEditingPeriod(null);
-          setShowCalendarModal(true);
-        }}
+        onAddPeriod={() => router.push("/period-log")}
         cycleDay={cycleDay}
         currentPhase={currentPhase}
         totalDays={totalDays}
@@ -101,20 +75,6 @@ export default function TodayScreen() {
       >
         <Timeline timeSlotData={timeSlotData} />
       </ScrollView>
-
-      <PeriodCalendarModal
-        visible={showCalendarModal}
-        onClose={() => setShowCalendarModal(false)}
-        cycles={cycles}
-        createCycle={createCycle}
-        isCreatingCycle={isCreatingCycle}
-        updateCycle={updateCycle}
-        isUpdatingCycle={isUpdatingCycle}
-        editingPeriod={editingPeriod}
-        setEditingPeriod={setEditingPeriod}
-        onDeletePeriod={handleDeletePeriod}
-        isDeletingCycle={isDeletingCycle}
-      />
     </View>
   );
 }
