@@ -46,6 +46,10 @@ export function UnifiedMonthCalendar({
   // Activity mode
   activityDots,
   onDayPress,
+  // Outlier indicator (optional) — returns true if a date is an outlier cycle start
+  isOutlierCycleStart,
+  // Predicted future period dates (optional) — Map of dateString -> { dayNum, isStart }
+  predictedPeriodDays,
 }) {
   const { colors } = useAppTheme();
   const today = startOfDay(new Date());
@@ -92,7 +96,33 @@ export function UnifiedMonthCalendar({
     const periodInfo = periodDays.get(dateString);
     const isSelected = selectedDate === dateString;
 
-    if (!isInMonth || isFuture) {
+    if (!isInMonth) {
+      return {
+        container: {
+          opacity: 0.3,
+          backgroundColor: "transparent",
+          borderWidth: 0,
+        },
+        text: { color: colors.secondary },
+        disabled: true,
+      };
+    }
+
+    // Future dates: not tappable, but show predicted period days if available
+    if (isFuture) {
+      const predictedInfo = predictedPeriodDays?.get(dateString);
+      if (predictedInfo) {
+        return {
+          container: {
+            opacity: 0.35,
+            backgroundColor: predictedInfo.isStart ? "#F8BBD9" : "#FDE4E7",
+            borderRadius: 8,
+            borderWidth: 0,
+          },
+          text: { color: colors.secondary, fontWeight: predictedInfo.isStart ? "700" : "500" },
+          disabled: true,
+        };
+      }
       return {
         container: {
           opacity: 0.3,
@@ -120,12 +150,19 @@ export function UnifiedMonthCalendar({
 
     // Period day
     if (periodInfo) {
+      // Check if this period start is an outlier cycle (red border indicator)
+      const isOutlierStart =
+        periodInfo.isStart && isOutlierCycleStart?.(day);
       return {
         container: {
           backgroundColor: periodInfo.isStart ? "#F8BBD9" : "#FDE4E7",
           borderRadius: 8,
-          borderWidth: isCurrentDay ? 2 : 0,
-          borderColor: isCurrentDay ? colors.primary : "transparent",
+          borderWidth: isOutlierStart ? 2 : isCurrentDay ? 2 : 0,
+          borderColor: isOutlierStart
+            ? "#E57373"
+            : isCurrentDay
+              ? colors.primary
+              : "transparent",
         },
         text: {
           color: "#000000",

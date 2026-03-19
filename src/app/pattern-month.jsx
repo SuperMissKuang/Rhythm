@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, ChevronRight, X } from "lucide-react-native";
@@ -6,6 +6,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import {
   format,
   parseISO,
+  addDays,
   addMonths,
   subMonths,
   isSameMonth,
@@ -18,6 +19,7 @@ import { useActivityStore } from "@/utils/stores/useActivityStore";
 import { useCycleStore } from "@/utils/stores/useCycleStore";
 import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
 import { useSelfCareStore } from "@/utils/stores/useSelfCareStore";
+import { getAverageCycleLength } from "@/utils/cycleUtils";
 import { UnifiedMonthCalendar } from "@/components/shared/UnifiedMonthCalendar";
 import { PeriodHistoryList } from "@/components/shared/PeriodHistoryList";
 
@@ -60,6 +62,9 @@ export default function PatternMonthScreen() {
     : new Date();
 
   const isCurrentMonth = isSameMonth(selectedMonth, new Date());
+  // Allow navigating up to 6 months ahead to see predicted periods
+  const maxMonth = addMonths(new Date(), 6);
+  const isAtMaxMonth = isSameMonth(selectedMonth, maxMonth);
 
   const handlePreviousMonth = () => {
     const previousMonth = subMonths(selectedMonth, 1);
@@ -67,7 +72,7 @@ export default function PatternMonthScreen() {
   };
 
   const handleNextMonth = () => {
-    if (isCurrentMonth) return;
+    if (isAtMaxMonth) return;
     const nextMonth = addMonths(selectedMonth, 1);
     router.setParams({ month: format(nextMonth, "yyyy-MM") });
   };
@@ -155,6 +160,40 @@ export default function PatternMonthScreen() {
     [activities, enabledActivities, cycles, anxietyEntries, selfCareEntries],
   );
 
+  // Check if a date is the start of an outlier cycle (for red border indicator)
+  const isOutlierCycleStart = useCallback(
+    (date) => {
+      const dateString = format(date, "yyyy-MM-dd");
+      return cycles.some(
+        (cycle) => cycle.start_date === dateString && cycle.is_outlier,
+      );
+    },
+    [cycles],
+  );
+
+  // Build predicted future period dates for the next 6 cycles
+  const predictedPeriodDays = useMemo(() => {
+    if (!cycles || cycles.length === 0) return null;
+    const avgLength = getAverageCycleLength(cycles);
+    const sorted = [...cycles].sort(
+      (a, b) => a.start_date.localeCompare(b.start_date),
+    );
+    const lastCycle = sorted[sorted.length - 1];
+    if (!lastCycle) return null;
+
+    const lastStart = parseISO(lastCycle.start_date);
+    const map = new Map();
+    for (let cycle = 1; cycle <= 6; cycle++) {
+      const predictedStart = addDays(lastStart, avgLength * cycle);
+      for (let i = 0; i < 5; i++) {
+        const d = addDays(predictedStart, i);
+        const ds = format(d, "yyyy-MM-dd");
+        map.set(ds, { dayNum: i + 1, isStart: i === 0 });
+      }
+    }
+    return map;
+  }, [cycles]);
+
   const handleDayPress = useCallback(
     (day) => {
       router.push({
@@ -221,14 +260,14 @@ export default function PatternMonthScreen() {
 
               <TouchableOpacity
                 onPress={handleNextMonth}
-                disabled={isCurrentMonth}
+                disabled={isAtMaxMonth}
                 style={{
                   padding: 8,
                   backgroundColor: colors.surface,
                   borderRadius: 6,
                   borderWidth: 1,
                   borderColor: colors.borderLight,
-                  opacity: isCurrentMonth ? 0.3 : 1,
+                  opacity: isAtMaxMonth ? 0.3 : 1,
                 }}
               >
                 <ChevronRight size={20} color={colors.primary} />
@@ -397,6 +436,8 @@ export default function PatternMonthScreen() {
               mode="activity"
               activityDots={getActivityDots}
               onDayPress={handleDayPress}
+              isOutlierCycleStart={isOutlierCycleStart}
+              predictedPeriodDays={predictedPeriodDays}
             />
           </View>
 

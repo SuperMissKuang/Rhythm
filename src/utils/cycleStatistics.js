@@ -18,7 +18,7 @@ export const OUTLIER_CONFIG = {
 export const DATA_INTEGRITY = {
   MIN_CYCLE_LENGTH: 10, // BLOCK: Shorter is likely same bleeding episode
   MAX_CYCLE_LENGTH: 60, // WARN: Longer likely means missed logging
-  MIN_GAP_FROM_PREVIOUS: 10, // Days from previous cycle start to allow new cycle
+  MIN_GAP_FROM_PREVIOUS: 10, // Max typical bleeding duration — closer dates are likely the same episode
 };
 
 /**

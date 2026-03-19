@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -9,14 +9,18 @@ import {
 import {
   format,
   parseISO,
+  addDays,
   addMonths,
   subMonths,
+  differenceInDays,
   isSameMonth,
 } from "date-fns";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAppTheme } from "@/utils/theme";
 import { useCycleStore } from "@/utils/stores/useCycleStore";
 import { useMenstrualCycles } from "@/utils/useMenstrualCycles";
+import { DATA_INTEGRITY } from "@/utils/cycleStatistics";
+import { getAverageCycleLength } from "@/utils/cycleUtils";
 import { UnifiedMonthCalendar } from "@/components/shared/UnifiedMonthCalendar";
 import { PeriodHistoryList } from "@/components/shared/PeriodHistoryList";
 
@@ -53,6 +57,46 @@ export default function PeriodLogScreen() {
 
   const today = new Date();
   const isCurrentMonth = isSameMonth(currentMonth, today);
+
+  // Check if selected date is too close to an existing cycle start
+  const tooCloseMessage = useMemo(() => {
+    if (!selectedDate) return null;
+    const selected = parseISO(selectedDate);
+    const cyclesToCheck = isEditMode
+      ? cycles.filter((c) => c.id !== editId)
+      : cycles;
+    for (const cycle of cyclesToCheck) {
+      const cycleStart = parseISO(cycle.start_date);
+      const gap = Math.abs(differenceInDays(selected, cycleStart));
+      if (gap > 0 && gap < DATA_INTEGRITY.MIN_GAP_FROM_PREVIOUS) {
+        return `Too close to an existing period (${gap} days apart). This is likely the same bleeding episode.`;
+      }
+    }
+    return null;
+  }, [selectedDate, cycles, editId, isEditMode]);
+
+  // Build predicted future period dates for the next 6 cycles
+  const predictedPeriodDays = useMemo(() => {
+    if (!cycles || cycles.length === 0) return null;
+    const avgLength = getAverageCycleLength(cycles);
+    const sorted = [...cycles].sort(
+      (a, b) => a.start_date.localeCompare(b.start_date),
+    );
+    const lastCycle = sorted[sorted.length - 1];
+    if (!lastCycle) return null;
+
+    const lastStart = parseISO(lastCycle.start_date);
+    const map = new Map();
+    for (let cycle = 1; cycle <= 6; cycle++) {
+      const predictedStart = addDays(lastStart, avgLength * cycle);
+      for (let i = 0; i < 5; i++) {
+        const d = addDays(predictedStart, i);
+        const ds = format(d, "yyyy-MM-dd");
+        map.set(ds, { dayNum: i + 1, isStart: i === 0 });
+      }
+    }
+    return map;
+  }, [cycles]);
 
   const handlePreviousMonth = () => {
     setCurrentMonth((m) => subMonths(m, 1));
@@ -106,6 +150,7 @@ export default function PeriodLogScreen() {
   };
 
   const hasChanges = isEditMode ? selectedDate !== startDate : !!selectedDate;
+  const canSave = hasChanges && !tooCloseMessage;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -154,9 +199,9 @@ export default function PeriodLogScreen() {
 
           <TouchableOpacity
             onPress={handleSave}
-            disabled={!hasChanges || isSaving}
+            disabled={!canSave || isSaving}
             style={{
-              backgroundColor: hasChanges ? "#F8BBD9" : colors.placeholder,
+              backgroundColor: canSave ? "#F8BBD9" : colors.placeholder,
               borderRadius: 20,
               paddingHorizontal: 16,
               paddingVertical: 8,
@@ -166,7 +211,7 @@ export default function PeriodLogScreen() {
               style={{
                 fontSize: 14,
                 fontFamily: "Montserrat_600SemiBold",
-                color: hasChanges ? "#000000" : "#FFFFFF",
+                color: canSave ? "#000000" : "#FFFFFF",
               }}
             >
               {isSaving ? "Saving..." : "Save"}
@@ -254,6 +299,7 @@ export default function PeriodLogScreen() {
           selectedDate={selectedDate}
           onSelectDate={handleSelectDate}
           highlightedCycleId={highlightedCycleId}
+          predictedPeriodDays={predictedPeriodDays}
         />
 
         {/* Selected date confirmation */}
@@ -286,6 +332,31 @@ export default function PeriodLogScreen() {
               }}
             >
               {format(parseISO(selectedDate), "EEEE, MMMM d, yyyy")}
+            </Text>
+          </View>
+        )}
+
+        {/* Too-close warning snackbar */}
+        {tooCloseMessage && (
+          <View
+            style={{
+              backgroundColor: "#FFF3E0",
+              borderRadius: 10,
+              padding: 12,
+              marginTop: 12,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                fontFamily: "Montserrat_500Medium",
+                color: "#E65100",
+                flex: 1,
+              }}
+            >
+              {tooCloseMessage}
             </Text>
           </View>
         )}

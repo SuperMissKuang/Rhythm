@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { Alert } from "react-native";
+import { format, parseISO } from "date-fns";
 import { useCycleStore } from "./stores/useCycleStore";
-import { validateNewCycleDate } from "./cycleStatistics";
+import {
+  validateNewCycleDate,
+  recalculateCycleLengths,
+  updateOutlierFlags,
+} from "./cycleStatistics";
 
 /**
  * Promise-based wrapper around Alert.alert for confirmation dialogs
@@ -13,6 +18,65 @@ const confirmAlert = (title, message) =>
       { text: "Continue", onPress: () => resolve(true) },
     ]);
   });
+
+/**
+ * Preview whether a create/update/delete would introduce new outlier cycles.
+ * Uses pure functions only — no side effects, no store writes.
+ *
+ * @param {Array} currentCycles - Current cycles array from store
+ * @param {Object} change - { type: "create"|"update"|"delete", startDate, cycleId }
+ * @returns {{ wouldCreateOutliers: boolean, newOutliers: Array<{start_date, cycle_length, reason}> }}
+ */
+const previewOutlierImpact = (currentCycles, change) => {
+  // Build a hypothetical cycles array based on the change type
+  let hypothetical;
+  if (change.type === "create") {
+    hypothetical = [
+      ...currentCycles,
+      { id: "__preview__", start_date: change.startDate, cycle_length: 0 },
+    ];
+  } else if (change.type === "update") {
+    hypothetical = currentCycles.map((c) =>
+      c.id === change.cycleId ? { ...c, start_date: change.startDate } : c,
+    );
+  } else if (change.type === "delete") {
+    hypothetical = currentCycles.filter((c) => c.id !== change.cycleId);
+  } else {
+    return { wouldCreateOutliers: false, newOutliers: [] };
+  }
+
+  // Run the same pure functions the store uses after saving
+  const withLengths = recalculateCycleLengths(hypothetical);
+  const withFlags = updateOutlierFlags(withLengths);
+
+  // Find cycles that would become newly-outlier (weren't outliers before)
+  const currentOutlierIds = new Set(
+    currentCycles.filter((c) => c.is_outlier).map((c) => c.id),
+  );
+  const newOutliers = withFlags.filter(
+    (c) => c.is_outlier && !currentOutlierIds.has(c.id),
+  );
+
+  return {
+    wouldCreateOutliers: newOutliers.length > 0,
+    newOutliers: newOutliers.map((c) => ({
+      start_date: c.start_date,
+      cycle_length: c.cycle_length,
+      reason: c.outlier_reason,
+    })),
+  };
+};
+
+/**
+ * Format outlier impact for display in confirmation dialogs
+ */
+const formatOutlierWarning = (newOutliers) =>
+  newOutliers
+    .map(
+      (o) =>
+        `• ${format(parseISO(o.start_date), "MMM d")}: ${o.cycle_length} days (unusually ${o.reason === "shorter" ? "short" : "long"})`,
+    )
+    .join("\n");
 
 export function useMenstrualCycles() {
   const cycles = useCycleStore((state) => state.cycles);
@@ -36,10 +100,15 @@ export function useMenstrualCycles() {
       return;
     }
 
-    if (validation.action === "adjust_previous") {
+    // Preview outlier impact — warn if this would create unusual cycle lengths
+    const impact = previewOutlierImpact(currentCycles, {
+      type: "create",
+      startDate,
+    });
+    if (impact.wouldCreateOutliers) {
       const confirmed = await confirmAlert(
-        "Shorter Than Typical",
-        "This is shorter than your typical cycle. Continue?"
+        "Unusual Cycle Length",
+        `Saving this date would create unusual cycle lengths:\n\n${formatOutlierWarning(impact.newOutliers)}\n\nContinue anyway?`,
       );
       if (!confirmed) return;
     }
@@ -95,10 +164,16 @@ export function useMenstrualCycles() {
           return;
         }
 
-        if (validation.action === "adjust_previous") {
+        // Preview outlier impact — warn if this would create unusual cycle lengths
+        const impact = previewOutlierImpact(currentCycles, {
+          type: "update",
+          cycleId: id,
+          startDate,
+        });
+        if (impact.wouldCreateOutliers) {
           const confirmed = await confirmAlert(
-            "Shorter Than Typical",
-            "This is shorter than your typical cycle. Continue?"
+            "Unusual Cycle Length",
+            `Saving this date would create unusual cycle lengths:\n\n${formatOutlierWarning(impact.newOutliers)}\n\nContinue anyway?`,
           );
           if (!confirmed) return;
         }
@@ -133,6 +208,20 @@ export function useMenstrualCycles() {
   };
 
   const deleteCycle = async (id, options = {}) => {
+    // Preview outlier impact — warn if deleting would make neighbors into outliers
+    const currentCycles = useCycleStore.getState().cycles;
+    const impact = previewOutlierImpact(currentCycles, {
+      type: "delete",
+      cycleId: id,
+    });
+    if (impact.wouldCreateOutliers) {
+      const confirmed = await confirmAlert(
+        "This Will Affect Other Cycles",
+        `Deleting this period will create unusual cycle lengths:\n\n${formatOutlierWarning(impact.newOutliers)}\n\nContinue with deletion?`,
+      );
+      if (!confirmed) return;
+    }
+
     setIsDeletingCycle(true);
     try {
       await useCycleStore.getState().deleteCycle(id);

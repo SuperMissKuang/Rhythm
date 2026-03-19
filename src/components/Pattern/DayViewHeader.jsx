@@ -23,6 +23,7 @@ export function DayViewHeader({
   centerMessage = null,
   daysLate = 0,
   isOutlier = false,
+  outlierReason = null,
   outlierAcknowledged = null,
   cycleId = null,
 }) {
@@ -35,6 +36,8 @@ export function DayViewHeader({
   const hidePhaseInfo = isOutlier && outlierAcknowledged === "mistake";
   // Show the prompt if outlier and not yet acknowledged
   const showOutlierPrompt = isOutlier && outlierAcknowledged === null;
+  // Dynamic copy based on whether cycle is shorter or longer than usual
+  const isShortOutlier = outlierReason === "shorter";
   // For mistake cycles, render the wheel with all-gray phases (no colored segments)
   const displayPhases = hidePhaseInfo && scaledPhases
     ? scaledPhases.map((phase) => ({ ...phase, color: "#E4E4E4" }))
@@ -183,7 +186,7 @@ export function DayViewHeader({
                 marginLeft: 8,
               }}
             >
-              Unusually long cycle ({totalDays} days)
+              {isShortOutlier ? `Unusually short cycle (${totalDays} days)` : `Unusually long cycle (${totalDays} days)`}
             </Text>
           </View>
           <Text
@@ -194,7 +197,9 @@ export function DayViewHeader({
               marginBottom: 12,
             }}
           >
-            Did you miss logging a period, or was this cycle really this long?
+            {isShortOutlier
+              ? "Is this a logging error, or was this cycle really this short?"
+              : "Did you miss logging a period, or was this cycle really this long?"}
           </Text>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <TouchableOpacity
@@ -215,7 +220,7 @@ export function DayViewHeader({
                   color: colors.secondary,
                 }}
               >
-                Missed a period
+                {isShortOutlier ? "Logging error" : "Missed a period"}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -235,7 +240,7 @@ export function DayViewHeader({
                   color: colors.background,
                 }}
               >
-                It was this long
+                {isShortOutlier ? "It was this short" : "It was this long"}
               </Text>
             </TouchableOpacity>
           </View>

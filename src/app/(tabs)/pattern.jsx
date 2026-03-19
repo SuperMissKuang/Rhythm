@@ -17,7 +17,10 @@ import {
   endOfMonth,
   startOfYear,
   endOfYear,
+  addDays,
   differenceInDays,
+  isAfter,
+  startOfDay,
   startOfWeek,
   endOfWeek,
   parseISO,
@@ -32,6 +35,7 @@ import {
   filterOutliers,
   OUTLIER_CONFIG,
 } from "@/utils/cycleStatistics";
+import { getAverageCycleLength } from "@/utils/cycleUtils";
 
 const NO_DATA_COLOR = "#E0E0E0";
 
@@ -111,16 +115,37 @@ export default function PatternScreen() {
   const currentSelectedFilter =
     selectedFilter || (allActivities.length > 0 ? allActivities[0] : null);
 
-  const handleMonthPress = (month, isFutureMonth) => {
-    if (isFutureMonth) return;
+  // Build a Set of predicted future period date strings for the next 6 cycles
+  const predictedPeriodDates = (() => {
+    if (!cycles || cycles.length === 0) return new Set();
+    const avgLength = getAverageCycleLength(cycles);
+    const sorted = sortCyclesChronologically(cycles);
+    const lastCycle = sorted[sorted.length - 1];
+    if (!lastCycle) return new Set();
+
+    const lastStart = parseISO(lastCycle.start_date);
+    const dates = new Set();
+    for (let cycle = 1; cycle <= 6; cycle++) {
+      const predictedStart = addDays(lastStart, avgLength * cycle);
+      for (let i = 0; i < 5; i++) {
+        dates.add(format(addDays(predictedStart, i), "yyyy-MM-dd"));
+      }
+    }
+    return dates;
+  })();
+
+  const handleMonthPress = (month) => {
     router.push({
       pathname: "/pattern-month",
       params: { month: format(month, "yyyy-MM") },
     });
   };
 
+  // Allow navigating 1 year ahead to see predicted periods
+  const isAtMaxYear = currentYear >= todayYear + 1;
+
   const handleNextYear = () => {
-    if (isCurrentYear) return; // Prevent going to future years
+    if (isAtMaxYear) return;
     setCurrentYear(currentYear + 1);
   };
 
@@ -284,8 +309,7 @@ export default function PatternScreen() {
           return (
           <TouchableOpacity
             key={month.getMonth()}
-            onPress={() => handleMonthPress(month, isFutureMonth)}
-            disabled={isFutureMonth}
+            onPress={() => handleMonthPress(month)}
             style={{
               width: "32%",
               backgroundColor: colors.surface,
@@ -293,7 +317,6 @@ export default function PatternScreen() {
               padding: 12,
               borderWidth: 1,
               borderColor: colors.borderLight,
-              opacity: isFutureMonth ? 0.4 : 1,
             }}
           >
             <Text
@@ -331,11 +354,13 @@ export default function PatternScreen() {
                 <View key={weekIndex} style={{ flexDirection: "row", gap: 1 }}>
                   {week.map((day) => {
                     const isCurrentMonth = day.getMonth() === month.getMonth();
+                    const isFutureDay = isAfter(startOfDay(day), startOfDay(new Date()));
                     const data = getActivityDataForDate(
                       day,
                       currentSelectedFilter,
                     );
                     const isOutlierStart = isCurrentMonth && currentSelectedFilter?.name === "Period" && isOutlierCycleStart(day);
+                    const isPredictedPeriod = isFutureDay && currentSelectedFilter?.name === "Period" && predictedPeriodDates.has(format(day, "yyyy-MM-dd"));
 
                     return (
                       <View
@@ -344,14 +369,16 @@ export default function PatternScreen() {
                           flex: 1,
                           aspectRatio: 1,
                           backgroundColor: isCurrentMonth
-                            ? getActivityColor(
-                                data.count,
-                                data.hasData,
-                                currentSelectedFilter,
-                              )
+                            ? isPredictedPeriod
+                              ? "#F8BBD9"
+                              : getActivityColor(
+                                  data.count,
+                                  data.hasData,
+                                  currentSelectedFilter,
+                                )
                             : "transparent",
                           borderRadius: 1,
-                          opacity: isCurrentMonth ? 1 : 0.2,
+                          opacity: !isCurrentMonth ? 0.2 : isFutureDay ? (isPredictedPeriod ? 0.5 : 0.3) : 1,
                           borderWidth: isOutlierStart ? 1.5 : isCurrentMonth ? 0.5 : 0,
                           borderColor: isOutlierStart ? "#E57373" : colors.borderLight,
                         }}
@@ -668,14 +695,14 @@ export default function PatternScreen() {
 
             <TouchableOpacity
               onPress={handleNextYear}
-              disabled={isCurrentYear}
+              disabled={isAtMaxYear}
               style={{
                 padding: 8,
                 backgroundColor: colors.surface,
                 borderRadius: 6,
                 borderWidth: 1,
                 borderColor: colors.borderLight,
-                opacity: isCurrentYear ? 0.3 : 1,
+                opacity: isAtMaxYear ? 0.3 : 1,
               }}
             >
               <ChevronRight size={20} color={colors.primary} />
