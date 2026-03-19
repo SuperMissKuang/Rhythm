@@ -21,7 +21,6 @@ import { useAnxietyStore } from "@/utils/stores/useAnxietyStore";
 import { useSelfCareStore } from "@/utils/stores/useSelfCareStore";
 import { getAverageCycleLength } from "@/utils/cycleUtils";
 import { UnifiedMonthCalendar } from "@/components/shared/UnifiedMonthCalendar";
-import { PeriodHistoryList } from "@/components/shared/PeriodHistoryList";
 
 // Calculate relative luminance with gamma correction
 const calculateLuminance = (hexColor) => {
@@ -48,7 +47,6 @@ export default function PatternMonthScreen() {
 
   const [enabledActivities, setEnabledActivities] = useState(new Set());
   const [showMoreActivities, setShowMoreActivities] = useState(false);
-  const [highlightedCycleId, setHighlightedCycleId] = useState(null);
 
   // Get data from stores
   const customActivities = useActivityStore((state) => state.activities);
@@ -474,32 +472,6 @@ export default function PatternMonthScreen() {
             </View>
           </View>
 
-          {/* Period History (when Period toggle is on) */}
-          {enabledActivities.has("period") && cycles.length > 0 && (
-            <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
-              <PeriodHistoryList
-                cycles={cycles.filter((c) => {
-                  // Show cycles up to and including the month in view
-                  const cycleDate = parseISO(c.start_date);
-                  const endOfViewedMonth = new Date(
-                    selectedMonth.getFullYear(),
-                    selectedMonth.getMonth() + 1,
-                    0,
-                  );
-                  return cycleDate <= endOfViewedMonth;
-                })}
-                maxItems={6}
-                onTapCycle={(cycle) => {
-                  const cycleMonth = parseISO(cycle.start_date);
-                  router.setParams({
-                    month: format(cycleMonth, "yyyy-MM"),
-                  });
-                  setHighlightedCycleId(cycle.id);
-                }}
-                highlightedCycleId={highlightedCycleId}
-              />
-            </View>
-          )}
         </View>
       </ScrollView>
     </View>

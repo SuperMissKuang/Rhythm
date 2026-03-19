@@ -87,7 +87,7 @@ export function UnifiedMonthCalendar({
     return set;
   }, [cycles]);
 
-  const DAY_SIZE = 40;
+  const DAY_SIZE = 34;
 
   const getDayStyle = (day, isInMonth) => {
     const dateString = format(day, "yyyy-MM-dd");
@@ -157,12 +157,8 @@ export function UnifiedMonthCalendar({
         container: {
           backgroundColor: periodInfo.isStart ? "#F8BBD9" : "#FDE4E7",
           borderRadius: 8,
-          borderWidth: isOutlierStart ? 2 : isCurrentDay ? 2 : 0,
-          borderColor: isOutlierStart
-            ? "#E57373"
-            : isCurrentDay
-              ? colors.primary
-              : "transparent",
+          borderWidth: isOutlierStart ? 2 : 0,
+          borderColor: isOutlierStart ? "#E57373" : "transparent",
         },
         text: {
           color: "#000000",
@@ -172,16 +168,16 @@ export function UnifiedMonthCalendar({
       };
     }
 
-    // Today
+    // Today — just bold text, no border or background
     if (isCurrentDay) {
       return {
         container: {
-          borderWidth: 2,
-          borderColor: colors.primary,
-          borderRadius: 8,
           backgroundColor: "transparent",
+          borderWidth: 1,
+          borderColor: colors.borderLight,
+          borderRadius: 4,
         },
-        text: { color: colors.primary, fontWeight: "700" },
+        text: { color: colors.primary, fontFamily: "Montserrat_600SemiBold", fontSize: 16 },
         disabled: false,
       };
     }
@@ -253,7 +249,7 @@ export function UnifiedMonthCalendar({
                 key={day.toISOString()}
                 style={{
                   flex: 1,
-                  height: DAY_SIZE + (mode === "activity" ? 16 : 0),
+                  height: DAY_SIZE + (mode === "activity" ? 22 : 0),
                   alignItems: "center",
                   justifyContent: "flex-start",
                 }}
@@ -287,7 +283,7 @@ export function UnifiedMonthCalendar({
                       flexDirection: "row",
                       justifyContent: "center",
                       gap: 2,
-                      marginTop: 2,
+                      marginTop: 4,
                     }}
                   >
                     {dots.slice(0, 4).map((dot, i) => (

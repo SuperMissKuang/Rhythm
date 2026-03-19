@@ -8,7 +8,7 @@ import {
   Montserrat_600SemiBold,
 } from "@expo-google-fonts/montserrat";
 import { useAppTheme } from "@/utils/theme";
-import { ChevronLeft, ChevronRight, RotateCcw, Info } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, RotateCcw, Info, Pencil } from "lucide-react-native";
 import { router } from "expo-router";
 import {
   format,
@@ -734,24 +734,46 @@ export default function PatternScreen() {
                   }
                   return (
                     <View style={{ position: "relative" }}>
-                      <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <Text
+                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontFamily: "Montserrat_500Medium",
+                              color: colors.secondary,
+                              letterSpacing: -0.2,
+                            }}
+                          >
+                            Avg: <Text style={{ fontFamily: "Montserrat_600SemiBold", color: colors.primary }}>{stats.average}d</Text>
+                            {stats.fluctuation > 0 && (
+                              <Text> · <Text style={{ fontFamily: "Montserrat_600SemiBold", color: colors.primary }}>±{stats.fluctuation}d</Text></Text>
+                            )}
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() => setShowCycleInfoTooltip(!showCycleInfoTooltip)}
+                            style={{ marginLeft: 4 }}
+                          >
+                            <Info size={14} color={colors.secondary} />
+                          </TouchableOpacity>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => router.push("/period-history")}
                           style={{
-                            fontSize: 13,
-                            fontFamily: "Montserrat_500Medium",
-                            color: colors.secondary,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 4,
+                            paddingVertical: 6,
+                            paddingHorizontal: 10,
+                            backgroundColor: colors.surface,
+                            borderRadius: 16,
+                            borderWidth: 1,
+                            borderColor: colors.borderLight,
                           }}
                         >
-                          Average cycle: <Text style={{ fontFamily: "Montserrat_600SemiBold", color: colors.primary }}>{stats.average} days</Text>
-                          {stats.fluctuation > 0 && (
-                            <Text>  •  Varies by <Text style={{ fontFamily: "Montserrat_600SemiBold", color: colors.primary }}>±{stats.fluctuation} days</Text></Text>
-                          )}
-                        </Text>
-                        <TouchableOpacity
-                          onPress={() => setShowCycleInfoTooltip(!showCycleInfoTooltip)}
-                          style={{ marginLeft: 8 }}
-                        >
-                          <Info size={16} color={colors.secondary} />
+                          <Pencil size={12} color={colors.primary} />
+                          <Text style={{ fontSize: 12, fontFamily: "Montserrat_600SemiBold", color: colors.primary }}>
+                            Edit Period History
+                          </Text>
                         </TouchableOpacity>
                       </View>
 

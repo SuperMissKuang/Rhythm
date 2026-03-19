@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ChevronLeft,
   ChevronRight,
-  ArrowLeft,
+  X,
 } from "lucide-react-native";
 import {
   format,
@@ -154,48 +154,49 @@ export default function PeriodLogScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Header */}
+      {/* Header: [X]  [<] Month [>]  [Save/Update] */}
       <View style={{ paddingTop: insets.top }}>
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingHorizontal: 20,
-            paddingVertical: 16,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
             borderBottomWidth: 1,
             borderBottomColor: colors.borderLight,
           }}
         >
           <TouchableOpacity
             onPress={() => router.back()}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 4,
-            }}
+            style={{ padding: 4 }}
           >
-            <ArrowLeft size={22} color={colors.primary} />
-            <Text
-              style={{
-                fontSize: 15,
-                fontFamily: "Montserrat_500Medium",
-                color: colors.primary,
-              }}
-            >
-              Back
-            </Text>
+            <X size={24} color={colors.primary} />
           </TouchableOpacity>
 
-          <Text
-            style={{
-              fontSize: 18,
-              fontFamily: "Montserrat_600SemiBold",
-              color: colors.primary,
-            }}
-          >
-            {isEditMode ? "Edit Period" : "Log Period"}
-          </Text>
+          <View style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+            <TouchableOpacity onPress={handlePreviousMonth} style={{ padding: 8 }}>
+              <ChevronLeft size={20} color={colors.primary} />
+            </TouchableOpacity>
+            <Text
+              style={{
+                fontSize: 17,
+                fontFamily: "Montserrat_600SemiBold",
+                color: colors.primary,
+                marginHorizontal: 4,
+                textAlign: "center",
+              }}
+            >
+              {format(currentMonth, "MMM yyyy")}
+            </Text>
+            <TouchableOpacity
+              onPress={handleNextMonth}
+              disabled={isCurrentMonth}
+              style={{ padding: 8, opacity: isCurrentMonth ? 0.3 : 1 }}
+            >
+              <ChevronRight size={20} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             onPress={handleSave}
@@ -214,7 +215,7 @@ export default function PeriodLogScreen() {
                 color: canSave ? "#000000" : "#FFFFFF",
               }}
             >
-              {isSaving ? "Saving..." : "Save"}
+              {isSaving ? (isEditMode ? "Updating..." : "Saving...") : (isEditMode ? "Update" : "Save")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -225,71 +226,6 @@ export default function PeriodLogScreen() {
         contentContainerStyle={{ padding: 20 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Instruction */}
-        <Text
-          style={{
-            fontSize: 15,
-            fontFamily: "Montserrat_500Medium",
-            color: colors.secondary,
-            textAlign: "center",
-            marginBottom: 20,
-          }}
-        >
-          {isEditMode
-            ? "Tap a new date to change when this period started"
-            : "Tap the date when your period started"}
-        </Text>
-
-        {/* Month navigation */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 16,
-          }}
-        >
-          <TouchableOpacity
-            onPress={handlePreviousMonth}
-            style={{
-              padding: 8,
-              backgroundColor: colors.surface,
-              borderRadius: 6,
-              borderWidth: 1,
-              borderColor: colors.borderLight,
-            }}
-          >
-            <ChevronLeft size={20} color={colors.primary} />
-          </TouchableOpacity>
-
-          <Text
-            style={{
-              fontSize: 18,
-              fontFamily: "Montserrat_600SemiBold",
-              color: colors.primary,
-              marginHorizontal: 20,
-              minWidth: 160,
-              textAlign: "center",
-            }}
-          >
-            {format(currentMonth, "MMMM yyyy")}
-          </Text>
-
-          <TouchableOpacity
-            onPress={handleNextMonth}
-            disabled={isCurrentMonth}
-            style={{
-              padding: 8,
-              backgroundColor: colors.surface,
-              borderRadius: 6,
-              borderWidth: 1,
-              borderColor: colors.borderLight,
-              opacity: isCurrentMonth ? 0.3 : 1,
-            }}
-          >
-            <ChevronRight size={20} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
 
         {/* Calendar */}
         <UnifiedMonthCalendar
@@ -302,8 +238,8 @@ export default function PeriodLogScreen() {
           predictedPeriodDays={predictedPeriodDays}
         />
 
-        {/* Selected date confirmation */}
-        {selectedDate && (
+        {/* New/selected date box (log mode: always; edit mode: only when different) */}
+        {selectedDate && (!isEditMode || selectedDate !== startDate) && (
           <View
             style={{
               backgroundColor: colors.surface,
@@ -334,6 +270,42 @@ export default function PeriodLogScreen() {
               {format(parseISO(selectedDate), "EEEE, MMMM d, yyyy")}
             </Text>
           </View>
+        )}
+
+        {/* Edit mode: Current start date box (always visible, tappable to re-select) */}
+        {isEditMode && (
+          <TouchableOpacity
+            onPress={() => setSelectedDate(startDate)}
+            activeOpacity={0.7}
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: 12,
+              padding: 16,
+              marginTop: selectedDate !== startDate ? 12 : 20,
+              borderWidth: selectedDate === startDate ? 2 : 1,
+              borderColor: selectedDate === startDate ? "#E91E63" : colors.borderLight,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontFamily: "Montserrat_500Medium",
+                color: colors.secondary,
+                marginBottom: 4,
+              }}
+            >
+              Current start date:
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                fontFamily: "Montserrat_600SemiBold",
+                color: colors.primary,
+              }}
+            >
+              {format(parseISO(startDate), "EEEE, MMMM d, yyyy")}
+            </Text>
+          </TouchableOpacity>
         )}
 
         {/* Too-close warning snackbar */}
@@ -369,22 +341,23 @@ export default function PeriodLogScreen() {
               maxItems={6}
               onTapCycle={handleTapCycle}
               highlightedCycleId={highlightedCycleId}
+              showTitle={false}
             />
           </View>
         )}
 
-        {/* Delete button — edit mode only */}
+        {/* Delete button — edit mode only, active only when current date is selected */}
         {isEditMode && (
           <TouchableOpacity
             onPress={handleDelete}
-            disabled={isDeletingCycle}
+            disabled={isDeletingCycle || selectedDate !== startDate}
             style={{
               backgroundColor: "#FFEBEE",
               borderRadius: 12,
               padding: 16,
               marginTop: 32,
               alignItems: "center",
-              opacity: isDeletingCycle ? 0.5 : 1,
+              opacity: isDeletingCycle || selectedDate !== startDate ? 0.4 : 1,
             }}
           >
             <Text
