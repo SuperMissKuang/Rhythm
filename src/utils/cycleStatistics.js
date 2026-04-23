@@ -283,14 +283,51 @@ export const validateNewCycleDate = (newStartDate, existingCycles) => {
   }
 
   const sorted = sortCyclesChronologically(existingCycles);
+  const newDateTime = newDate.getTime();
 
-  // Find the cycle that starts before the new date
+  // Check for exact-date duplicate. Clearer message than letting the
+  // gap check below catch it as "too close (0 days)".
+  const duplicate = sorted.find(
+    (c) => parseISO(c.start_date).getTime() === newDateTime,
+  );
+  if (duplicate) {
+    return {
+      isValid: false,
+      action: "block",
+      message: "A period is already logged on this date.",
+      previousCycleId: duplicate.id,
+    };
+  }
+
+  // Find the nearest cycle before and after the new date in one pass.
+  // Previous neighbor: last cycle starting before newDate.
+  // Next neighbor: first cycle starting after newDate.
   let previousCycle = null;
-  for (let i = sorted.length - 1; i >= 0; i--) {
+  let nextCycle = null;
+  for (let i = 0; i < sorted.length; i++) {
     const cycleStart = parseISO(sorted[i].start_date);
     if (cycleStart < newDate) {
       previousCycle = sorted[i];
+    } else if (cycleStart > newDate) {
+      nextCycle = sorted[i];
       break;
+    }
+  }
+
+  // Check minimum gap to the next cycle (forward neighbor). Mirrors the
+  // previous-neighbor check further below; without this, a new date that
+  // sits too close to a later cycle can slip through when no earlier
+  // cycle exists to trigger the backward check.
+  if (nextCycle) {
+    const nextStart = parseISO(nextCycle.start_date);
+    const forwardGap = differenceInDays(nextStart, newDate);
+    if (forwardGap < DATA_INTEGRITY.MIN_GAP_FROM_PREVIOUS) {
+      return {
+        isValid: false,
+        action: "block",
+        message: `Too close to next period (${forwardGap} days). This may be the same bleeding episode.`,
+        previousCycleId: nextCycle.id,
+      };
     }
   }
 
