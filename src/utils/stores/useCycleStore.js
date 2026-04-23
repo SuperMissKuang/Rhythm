@@ -6,8 +6,37 @@ import {
   updateOutlierFlags,
   checkDataIntegrity,
 } from "@/utils/cycleStatistics";
+import {
+  readVersioned,
+  writeVersioned,
+} from "@/utils/storage/versionedStorage";
 
 const STORAGE_KEY = "@rhythm:menstrual-cycles";
+
+/**
+ * Current schema version for persisted cycle data.
+ *
+ * Bump this (and add an entry to MIGRATIONS) any time the shape of a cycle
+ * record changes in a way old installs wouldn't handle gracefully — e.g.
+ * adding a required field, renaming a field, changing a field's type.
+ *
+ * Pure additive changes (a new optional field that defaults to null) don't
+ * strictly require a bump, but bumping is cheap and makes intent explicit.
+ */
+const CURRENT_SCHEMA_VERSION = 1;
+
+/**
+ * Migration registry. Each entry: { [targetVersion]: (oldData) => newData }.
+ * Migrations run in order from storedVersion+1 up to CURRENT_SCHEMA_VERSION.
+ *
+ * v1 has no migration entry: legacy storage was a raw array of cycles, which
+ * is exactly the shape v1 expects (we're just wrapping it in an envelope).
+ * The versionedStorage helper treats a missing entry as a no-op.
+ *
+ * Example for a future v2 that adds `period_length`:
+ *   2: (v1cycles) => v1cycles.map(c => ({ ...c, period_length: null })),
+ */
+const MIGRATIONS = {};
 
 /**
  * Normalize cycle data to use snake_case field names
@@ -49,16 +78,24 @@ export const useCycleStore = create((set, get) => ({
   init: async () => {
     set({ isLoading: true });
     try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      let cycles = stored ? JSON.parse(stored) : [];
+      const stored = await readVersioned(
+        STORAGE_KEY,
+        CURRENT_SCHEMA_VERSION,
+        MIGRATIONS
+      );
+
+      const rawCycles = Array.isArray(stored?.data) ? stored.data : [];
+      const envelopeWasMigrated = stored?.wasMigrated ?? false;
 
       // Normalize and validate cycles data
-      cycles = cycles
+      let cycles = rawCycles
         .filter((cycle) => cycle && (cycle.start_date || cycle.startDate))
         .map(normalizeCycle)
         .filter((cycle) => cycle && cycle.start_date);
 
-      // Migration: Check if cycles need outlier fields or recalculation
+      // Migration: Check if cycles need outlier fields or recalculation.
+      // This is separate from schema-version migration — it's a data-correctness
+      // backfill that runs on every load. Kept as-is from the pre-versioning code.
       let needsMigration = false;
 
       // Check for missing outlier fields
@@ -93,8 +130,14 @@ export const useCycleStore = create((set, get) => ({
         cycles = recalculateCycleLengths(cycles);
         // Update outlier flags
         cycles = updateOutlierFlags(cycles);
-        // Save migrated data
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(cycles));
+      }
+
+      // Persist if either (a) the schema envelope was upgraded from a legacy
+      // or older version, or (b) the data-correctness backfill above made
+      // changes. Writing once here guarantees subsequent loads find the
+      // current envelope and skip both migrations.
+      if (envelopeWasMigrated || (needsMigration && cycles.length > 0)) {
+        await writeVersioned(STORAGE_KEY, cycles, CURRENT_SCHEMA_VERSION);
       }
 
       console.log("Loaded cycles from storage:", cycles.length);
@@ -146,7 +189,7 @@ export const useCycleStore = create((set, get) => ({
         createdCycle.is_hard_limit_violation = integrityCheck.isError;
       }
 
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(allCycles));
+      await writeVersioned(STORAGE_KEY, allCycles, CURRENT_SCHEMA_VERSION);
       set({ cycles: allCycles });
 
       console.log("Created cycle with auto-recalculation:", createdCycle);
@@ -206,7 +249,7 @@ export const useCycleStore = create((set, get) => ({
       // Update outlier flags
       updatedCycles = updateOutlierFlags(updatedCycles);
 
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCycles));
+      await writeVersioned(STORAGE_KEY, updatedCycles, CURRENT_SCHEMA_VERSION);
       set({ cycles: updatedCycles });
 
       const updatedCycle = updatedCycles.find((c) => c.id === id);
@@ -243,7 +286,7 @@ export const useCycleStore = create((set, get) => ({
       let remainingCycles = existingCycles.filter((cycle) => cycle.id !== id);
 
       if (remainingCycles.length === 0) {
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+        await writeVersioned(STORAGE_KEY, [], CURRENT_SCHEMA_VERSION);
         set({ cycles: [] });
         return { success: true, errors: [] };
       }
@@ -254,7 +297,7 @@ export const useCycleStore = create((set, get) => ({
       // Update outlier flags
       remainingCycles = updateOutlierFlags(remainingCycles);
 
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remainingCycles));
+      await writeVersioned(STORAGE_KEY, remainingCycles, CURRENT_SCHEMA_VERSION);
       set({ cycles: remainingCycles });
 
       console.log("Deleted cycle and recalculated lengths");
@@ -317,7 +360,7 @@ export const useCycleStore = create((set, get) => ({
           : cycle
       );
 
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCycles));
+      await writeVersioned(STORAGE_KEY, updatedCycles, CURRENT_SCHEMA_VERSION);
       set({ cycles: updatedCycles });
     } catch (error) {
       console.error("Error acknowledging outlier:", error);
@@ -349,7 +392,7 @@ export const useCycleStore = create((set, get) => ({
       }
 
       // Save to AsyncStorage and update state
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedCycles));
+      await writeVersioned(STORAGE_KEY, normalizedCycles, CURRENT_SCHEMA_VERSION);
       set({ cycles: normalizedCycles });
 
       console.log("Loaded debug scenario with", normalizedCycles.length, "cycles");
