@@ -49,13 +49,19 @@ const previewOutlierImpact = (currentCycles, change) => {
   const withLengths = recalculateCycleLengths(hypothetical);
   const withFlags = updateOutlierFlags(withLengths);
 
-  // Find cycles that would become newly-outlier (weren't outliers before)
-  const currentOutlierIds = new Set(
-    currentCycles.filter((c) => c.is_outlier).map((c) => c.id),
+  // Only flag cycles whose cycle_length actually changes (or the new preview
+  // cycle). A cycle whose flag flips purely because the statistical baseline
+  // shifted — but whose length is unchanged — isn't something the user can
+  // act on, and surfacing it is confusing.
+  const originalLengthsById = new Map(
+    currentCycles.map((c) => [c.id, c.cycle_length]),
   );
-  const newOutliers = withFlags.filter(
-    (c) => c.is_outlier && !currentOutlierIds.has(c.id),
-  );
+  const newOutliers = withFlags.filter((c) => {
+    if (!c.is_outlier) return false;
+    if (c.id === "__preview__") return true;
+    const originalLength = originalLengthsById.get(c.id);
+    return originalLength !== c.cycle_length;
+  });
 
   return {
     wouldCreateOutliers: newOutliers.length > 0,

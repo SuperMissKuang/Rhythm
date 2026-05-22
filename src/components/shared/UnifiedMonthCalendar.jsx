@@ -50,6 +50,8 @@ export function UnifiedMonthCalendar({
   isOutlierCycleStart,
   // Predicted future period dates (optional) — Map of dateString -> { dayNum, isStart }
   predictedPeriodDays,
+  // Dates on or before this Date are dimmed and not tappable (existing visuals preserved)
+  minSelectableDate,
 }) {
   const { colors } = useAppTheme();
   const today = startOfDay(new Date());
@@ -239,6 +241,9 @@ export function UnifiedMonthCalendar({
             const style = getDayStyle(day, isInMonth);
             const dateString = format(day, "yyyy-MM-dd");
             const isFuture = isAfter(startOfDay(day), today);
+            const isPast =
+              !!minSelectableDate &&
+              !isAfter(startOfDay(day), startOfDay(minSelectableDate));
             const dots =
               mode === "activity" && isInMonth && !isFuture
                 ? activityDots?.(day) || []
@@ -256,13 +261,14 @@ export function UnifiedMonthCalendar({
               >
                 <TouchableOpacity
                   onPress={() => handleDayPress(day)}
-                  disabled={style.disabled}
+                  disabled={style.disabled || isPast}
                   style={{
                     width: DAY_SIZE,
                     height: DAY_SIZE,
                     justifyContent: "center",
                     alignItems: "center",
                     ...style.container,
+                    ...(isPast ? { opacity: 0.5 } : null),
                   }}
                 >
                   <Text

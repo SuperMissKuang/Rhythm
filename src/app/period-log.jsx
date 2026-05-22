@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -15,7 +15,7 @@ import {
   differenceInDays,
   isSameMonth,
 } from "date-fns";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import { useAppTheme } from "@/utils/theme";
 import { useCycleStore } from "@/utils/stores/useCycleStore";
 import { useMenstrualCycles } from "@/utils/useMenstrualCycles";
@@ -27,45 +27,40 @@ import { PeriodHistoryList } from "@/components/shared/PeriodHistoryList";
 export default function PeriodLogScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const { editId, startDate } = useLocalSearchParams();
 
   const cycles = useCycleStore((state) => state.cycles);
-  const {
-    createCycle,
-    isCreatingCycle,
-    updateCycle,
-    isUpdatingCycle,
-    deleteCycle,
-    isDeletingCycle,
-  } = useMenstrualCycles();
-
-  const isEditMode = !!editId;
-  const isSaving = isCreatingCycle || isUpdatingCycle;
+  const { createCycle, isCreatingCycle } = useMenstrualCycles();
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  // Track which cycle is highlighted when tapping from history list
   const [highlightedCycleId, setHighlightedCycleId] = useState(null);
-
-  // In edit mode, pre-select the cycle's start date and navigate to its month
-  useEffect(() => {
-    if (isEditMode && startDate) {
-      setSelectedDate(startDate);
-      setCurrentMonth(parseISO(startDate));
-    }
-  }, [editId, startDate]);
 
   const today = new Date();
   const isCurrentMonth = isSameMonth(currentMonth, today);
 
-  // Check if selected date is too close to an existing cycle start
-  const tooCloseMessage = useMemo(() => {
+  // The latest cycle's start_date — new periods must be strictly after this.
+  // Also passed to the calendar so on-or-before dates are visually disabled.
+  const latestCycleStart = useMemo(() => {
+    if (cycles.length === 0) return null;
+    return cycles.reduce((latest, c) => {
+      const d = parseISO(c.start_date);
+      return d > latest ? d : latest;
+    }, parseISO(cycles[0].start_date));
+  }, [cycles]);
+
+  // This screen only logs new periods forward in time. Past edits, deletes,
+  // and merges are handled on the period-history screen.
+  const validationMessage = useMemo(() => {
     if (!selectedDate) return null;
     const selected = parseISO(selectedDate);
-    const cyclesToCheck = isEditMode
-      ? cycles.filter((c) => c.id !== editId)
-      : cycles;
-    for (const cycle of cyclesToCheck) {
+
+    // Rule: new period must start after the most recent existing cycle.
+    if (latestCycleStart && selected <= latestCycleStart) {
+      return `New periods must start after your most recent cycle (${format(latestCycleStart, "MMM d, yyyy")}). Use Edit History to update past cycles.`;
+    }
+
+    // Rule: must be at least MIN_GAP_FROM_PREVIOUS days from any cycle.
+    for (const cycle of cycles) {
       const cycleStart = parseISO(cycle.start_date);
       const gap = Math.abs(differenceInDays(selected, cycleStart));
       if (gap > 0 && gap < DATA_INTEGRITY.MIN_GAP_FROM_PREVIOUS) {
@@ -73,7 +68,7 @@ export default function PeriodLogScreen() {
       }
     }
     return null;
-  }, [selectedDate, cycles, editId, isEditMode]);
+  }, [selectedDate, cycles, latestCycleStart]);
 
   // Build predicted future period dates for the next 6 cycles
   const predictedPeriodDays = useMemo(() => {
@@ -124,37 +119,21 @@ export default function PeriodLogScreen() {
 
   const handleSave = () => {
     if (!selectedDate) return;
-
-    if (isEditMode) {
-      updateCycle(
-        { id: editId, start_date: selectedDate },
-        { onSuccess: () => router.back() },
-      );
-    } else {
-      createCycle(
-        {
-          userId: "default-user",
-          start_date: selectedDate,
-          cycle_length: 28,
-        },
-        { onSuccess: () => router.back() },
-      );
-    }
+    createCycle(
+      {
+        userId: "default-user",
+        start_date: selectedDate,
+        cycle_length: 28,
+      },
+      { onSuccess: () => router.back() },
+    );
   };
 
-  const handleDelete = () => {
-    if (!editId) return;
-    deleteCycle(editId, {
-      onSuccess: () => router.back(),
-    });
-  };
-
-  const hasChanges = isEditMode ? selectedDate !== startDate : !!selectedDate;
-  const canSave = hasChanges && !tooCloseMessage;
+  const canSave = !!selectedDate && !validationMessage;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Header: [X]  [<] Month [>]  [Save/Update] */}
+      {/* Header: [X]  [<] Month [>]  [Save] */}
       <View style={{ paddingTop: insets.top }}>
         <View
           style={{
@@ -174,7 +153,14 @@ export default function PeriodLogScreen() {
             <X size={24} color={colors.primary} />
           </TouchableOpacity>
 
-          <View style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
             <TouchableOpacity onPress={handlePreviousMonth} style={{ padding: 8 }}>
               <ChevronLeft size={20} color={colors.primary} />
             </TouchableOpacity>
@@ -200,7 +186,7 @@ export default function PeriodLogScreen() {
 
           <TouchableOpacity
             onPress={handleSave}
-            disabled={!canSave || isSaving}
+            disabled={!canSave || isCreatingCycle}
             style={{
               backgroundColor: canSave ? "#F8BBD9" : colors.placeholder,
               borderRadius: 20,
@@ -215,7 +201,7 @@ export default function PeriodLogScreen() {
                 color: canSave ? "#000000" : "#FFFFFF",
               }}
             >
-              {isSaving ? (isEditMode ? "Updating..." : "Saving...") : (isEditMode ? "Update" : "Save")}
+              {isCreatingCycle ? "Saving..." : "Save"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -226,7 +212,6 @@ export default function PeriodLogScreen() {
         contentContainerStyle={{ padding: 20 }}
         showsVerticalScrollIndicator={false}
       >
-
         {/* Calendar */}
         <UnifiedMonthCalendar
           month={currentMonth}
@@ -236,10 +221,11 @@ export default function PeriodLogScreen() {
           onSelectDate={handleSelectDate}
           highlightedCycleId={highlightedCycleId}
           predictedPeriodDays={predictedPeriodDays}
+          minSelectableDate={latestCycleStart}
         />
 
-        {/* New/selected date box (log mode: always; edit mode: only when different) */}
-        {selectedDate && (!isEditMode || selectedDate !== startDate) && (
+        {/* Selected date box */}
+        {selectedDate && (
           <View
             style={{
               backgroundColor: colors.surface,
@@ -258,7 +244,7 @@ export default function PeriodLogScreen() {
                 marginBottom: 4,
               }}
             >
-              {isEditMode ? "New start date:" : "Period start date:"}
+              Period start date:
             </Text>
             <Text
               style={{
@@ -272,44 +258,8 @@ export default function PeriodLogScreen() {
           </View>
         )}
 
-        {/* Edit mode: Current start date box (always visible, tappable to re-select) */}
-        {isEditMode && (
-          <TouchableOpacity
-            onPress={() => setSelectedDate(startDate)}
-            activeOpacity={0.7}
-            style={{
-              backgroundColor: colors.surface,
-              borderRadius: 12,
-              padding: 16,
-              marginTop: selectedDate !== startDate ? 12 : 20,
-              borderWidth: selectedDate === startDate ? 2 : 1,
-              borderColor: selectedDate === startDate ? "#E91E63" : colors.borderLight,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                fontFamily: "Montserrat_500Medium",
-                color: colors.secondary,
-                marginBottom: 4,
-              }}
-            >
-              Current start date:
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                fontFamily: "Montserrat_600SemiBold",
-                color: colors.primary,
-              }}
-            >
-              {format(parseISO(startDate), "EEEE, MMMM d, yyyy")}
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Too-close warning snackbar */}
-        {tooCloseMessage && (
+        {/* Too-close warning */}
+        {validationMessage && (
           <View
             style={{
               backgroundColor: "#FFF3E0",
@@ -328,49 +278,21 @@ export default function PeriodLogScreen() {
                 flex: 1,
               }}
             >
-              {tooCloseMessage}
+              {validationMessage}
             </Text>
           </View>
         )}
 
         {/* Period History — read-only, tap to jump calendar */}
-        {!isEditMode && (
-          <View style={{ marginTop: 24 }}>
-            <PeriodHistoryList
-              cycles={cycles}
-              maxItems={6}
-              onTapCycle={handleTapCycle}
-              highlightedCycleId={highlightedCycleId}
-              showTitle={false}
-            />
-          </View>
-        )}
-
-        {/* Delete button — edit mode only, active only when current date is selected */}
-        {isEditMode && (
-          <TouchableOpacity
-            onPress={handleDelete}
-            disabled={isDeletingCycle || selectedDate !== startDate}
-            style={{
-              backgroundColor: "#FFEBEE",
-              borderRadius: 12,
-              padding: 16,
-              marginTop: 32,
-              alignItems: "center",
-              opacity: isDeletingCycle || selectedDate !== startDate ? 0.4 : 1,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 15,
-                fontFamily: "Montserrat_600SemiBold",
-                color: "#D32F2F",
-              }}
-            >
-              {isDeletingCycle ? "Deleting..." : "Delete This Period"}
-            </Text>
-          </TouchableOpacity>
-        )}
+        <View style={{ marginTop: 24 }}>
+          <PeriodHistoryList
+            cycles={cycles}
+            maxItems={6}
+            onTapCycle={handleTapCycle}
+            highlightedCycleId={highlightedCycleId}
+            showTitle={false}
+          />
+        </View>
       </ScrollView>
     </View>
   );
