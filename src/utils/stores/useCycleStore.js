@@ -347,27 +347,6 @@ export const useCycleStore = create((set, get) => ({
   },
 
   /**
-   * Acknowledge an outlier cycle as either a logging mistake or a confirmed real cycle
-   * @param {string} cycleId - The cycle ID to acknowledge
-   * @param {"mistake"|"confirmed"} response - The user's response
-   */
-  acknowledgeCycleOutlier: async (cycleId, response) => {
-    try {
-      const existingCycles = get().cycles;
-      const updatedCycles = existingCycles.map((cycle) =>
-        cycle.id === cycleId
-          ? { ...cycle, outlier_acknowledged: response }
-          : cycle
-      );
-
-      await writeVersioned(STORAGE_KEY, updatedCycles, CURRENT_SCHEMA_VERSION);
-      set({ cycles: updatedCycles });
-    } catch (error) {
-      console.error("Error acknowledging outlier:", error);
-    }
-  },
-
-  /**
    * Load a debug scenario (development only)
    * @param {Array} cycles - Array of cycle objects to load
    * @returns {{ success: boolean, errors: Array<string> }}

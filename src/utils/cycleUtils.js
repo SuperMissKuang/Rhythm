@@ -231,7 +231,6 @@ export const getCurrentCycleInfo = (cycles, targetDate) => {
     // Outlier info for the relevant cycle
     isOutlier: relevantCycle.is_outlier ?? false,
     outlierReason: relevantCycle.outlier_reason ?? null,
-    outlierAcknowledged: relevantCycle.outlier_acknowledged ?? null,
     cycleId: relevantCycle.id,
   };
 };
